@@ -39,17 +39,21 @@ succeeds.
 
 ## Plan the dev environment
 
-Copy `environments/dev/backend.tf.example` to `backend.tf` and replace the
-bucket placeholder. Then:
+Copy the ignored backend and variable files and replace their placeholders:
 
 ```bash
 cd infra/terraform/environments/dev
+cp backend.hcl.example backend.hcl
 cp terraform.tfvars.example terraform.tfvars
-terraform init
+terraform init -reconfigure -backend-config=backend.hcl
 terraform plan -out=dev.tfplan
 terraform show dev.tfplan
 terraform apply dev.tfplan
 ```
+
+`backend.hcl` and `terraform.tfvars` are ignored because they contain
+account-specific operator settings. The committed example files remain the
+reviewable source for every required value.
 
 The default API endpoint is private-only. A local workstation can reach it only
 through private connectivity. A temporary demo may set `public_access_cidrs` to

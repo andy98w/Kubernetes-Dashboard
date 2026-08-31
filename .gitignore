@@ -3,6 +3,8 @@
 .terraform/
 *.tfstate*
 *.tfplan
+*.tfvars
+backend.hcl
 node_modules/
 dist/
 *.tsbuildinfo
