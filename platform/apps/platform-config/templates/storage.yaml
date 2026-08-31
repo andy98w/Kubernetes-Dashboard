@@ -8,6 +8,9 @@ provisioner: ebs.csi.aws.com
 parameters:
   type: gp3
   encrypted: "true"
+  tagSpecification_1: "Project=KubeVista"
+  tagSpecification_2: "Environment=dev"
+  tagSpecification_3: "CostCenter=portfolio"
 reclaimPolicy: Retain
 allowVolumeExpansion: true
 volumeBindingMode: WaitForFirstConsumer

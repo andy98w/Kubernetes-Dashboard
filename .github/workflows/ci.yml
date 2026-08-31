@@ -39,6 +39,7 @@ jobs:
       - uses: hashicorp/setup-terraform@v4
         with: { terraform_version: '1.16.0' }
       - run: terraform fmt -check -recursive infra/terraform
+      - run: bash -n scripts/*.sh
       - run: terraform init -backend=false && terraform validate
         working-directory: infra/terraform/bootstrap
       - run: terraform init -backend=false && terraform validate

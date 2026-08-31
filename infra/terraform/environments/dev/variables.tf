@@ -76,6 +76,7 @@ variable "budget_notification_email" {
   type        = string
   default     = null
   nullable    = true
+  sensitive   = true
 }
 
 variable "external_secret_prefix" {
@@ -86,6 +87,18 @@ variable "external_secret_prefix" {
   validation {
     condition     = length(var.external_secret_prefix) > 1 && endswith(var.external_secret_prefix, "/")
     error_message = "external_secret_prefix must be non-empty and end with a slash."
+  }
+}
+
+variable "expires_at" {
+  description = "Optional RFC3339 teardown deadline added to AWS resource tags for ephemeral deployments."
+  type        = string
+  default     = null
+  nullable    = true
+
+  validation {
+    condition     = var.expires_at == null || can(formatdate("YYYY-MM-DD'T'hh:mm:ssZ", var.expires_at))
+    error_message = "expires_at must be null or an RFC3339 timestamp."
   }
 }
 

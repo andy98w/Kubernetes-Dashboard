@@ -1,13 +1,17 @@
 locals {
   azs = slice(data.aws_availability_zones.available.names, 0, 3)
 
-  tags = merge({
-    Project     = "KubeVista"
-    Environment = var.environment
-    ManagedBy   = "Terraform"
-    Repository  = "andy98w/Kubernetes-Dashboard"
-    CostCenter  = "portfolio"
-  }, var.tags)
+  tags = merge(
+    {
+      Project     = "KubeVista"
+      Environment = var.environment
+      ManagedBy   = "Terraform"
+      Repository  = "andy98w/Kubernetes-Dashboard"
+      CostCenter  = "portfolio"
+    },
+    var.expires_at == null ? {} : { ExpiresAt = var.expires_at },
+    var.tags,
+  )
 }
 
 module "vpc" {
@@ -158,7 +162,7 @@ resource "aws_budgets_budget" "monthly" {
   }
 
   dynamic "notification" {
-    for_each = var.budget_notification_email == null ? {} : {
+    for_each = nonsensitive(var.budget_notification_email == null) ? {} : {
       actual-50 = {
         threshold         = 50
         notification_type = "ACTUAL"

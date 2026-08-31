@@ -15,3 +15,6 @@ budget_notification_email = "you@example.com"
 
 # External Secrets can read only Secrets Manager entries under this name prefix.
 external_secret_prefix = "kubevista/"
+
+# Set immediately before an ephemeral apply; automation calculates this value.
+# expires_at = "2026-09-01T02:00:00Z"

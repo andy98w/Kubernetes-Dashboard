@@ -33,6 +33,41 @@ kubectl apply -f platform/examples/external-secret.yaml
 
 Never put a real secret value in Git or Terraform variables.
 
+## Ephemeral portfolio lifecycle
+
+The production-shaped environment is intentionally run on demand. Use an
+eight-hour default TTL, preserve the encrypted state backend, and destroy the
+chargeable environment after each demonstration.
+
+For a local SSO session:
+
+```bash
+export AWS_PROFILE=kubevista
+export KUBEVISTA_AWS_ACCOUNT_ID=<expected-account-id>
+export KUBEVISTA_TTL_HOURS=8
+scripts/terraform-ephemeral.sh plan
+scripts/terraform-ephemeral.sh apply
+```
+
+The plan adds an `ExpiresAt` tag to tagged AWS resources and writes the deadline
+to ignored local `work/ephemeral-deployment.env`. A tag is evidence and an
+operator signal; it does not automatically delete resources.
+
+The manual `Ephemeral EKS lifecycle` GitHub workflow offers the same
+plan/apply/destroy controls. Its `kubevista-ephemeral` GitHub Environment must
+require approval and define these environment values:
+
+- variables: `AWS_ACCOUNT_ID`, `AWS_REGION`, `AWS_DEPLOY_ROLE_ARN`,
+  `EKS_ADMIN_PRINCIPAL_ARN`, `EKS_PUBLIC_ACCESS_CIDRS_JSON`, `TF_STATE_BUCKET`,
+  and `TF_STATE_KMS_KEY_ARN`;
+- secret: `BUDGET_NOTIFICATION_EMAIL`.
+
+`AWS_DEPLOY_ROLE_ARN` must trust GitHub's OIDC provider only for this repository
+and environment. Do not store AWS access keys in GitHub. A workflow invocation
+must also contain the exact typed confirmation `PLAN kubevista-dev`,
+`APPLY kubevista-dev`, or `DESTROY kubevista-dev`. Concurrency prevents two
+Terraform lifecycle operations from mutating the same state simultaneously.
+
 ## Verify each layer
 
 ```bash
@@ -86,6 +121,19 @@ terraform -chdir=infra/terraform/environments/dev plan -destroy -out=destroy.tfp
 terraform -chdir=infra/terraform/environments/dev apply destroy.tfplan
 ```
 
+The guarded local equivalent is:
+
+```bash
+AWS_PROFILE=kubevista \
+KUBEVISTA_AWS_ACCOUNT_ID=<expected-account-id> \
+scripts/terraform-ephemeral.sh destroy
+```
+
 The state bucket is intentionally retained. Confirm EBS volumes, load balancers,
 NAT gateways, and CloudWatch log groups according to the chosen retention policy
 so no unexpected recurring charges remain.
+
+Keep static portfolio sites outside EKS (for example, on static object/CDN
+hosting). The cluster is reserved for demonstrations that benefit from
+Kubernetes scheduling, IAM, GitOps, and observability; placing a static site in
+EKS does not reduce the fixed EKS or NAT gateway charges.
