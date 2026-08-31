@@ -1,11 +1,14 @@
 package httpapi
 
 import (
+	"context"
 	"encoding/json"
+	"log/slog"
 	"net/http"
 	"time"
 
 	"github.com/andy98w/Kubernetes-Dashboard/api/internal/config"
+	cluster "github.com/andy98w/Kubernetes-Dashboard/api/internal/kubernetes"
 )
 
 type status struct {
@@ -15,19 +18,31 @@ type status struct {
 	Timestamp   string `json:"timestamp"`
 }
 
-func New(cfg config.Config) http.Handler {
+func New(cfg config.Config, inventory cluster.Inventory) http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, _ *http.Request) {
 		writeJSON(w, http.StatusOK, status{"ok", cfg.Version, cfg.Environment, time.Now().UTC().Format(time.RFC3339)})
 	})
-	mux.HandleFunc("GET /readyz", func(w http.ResponseWriter, _ *http.Request) {
+	mux.HandleFunc("GET /readyz", func(w http.ResponseWriter, r *http.Request) {
+		ctx, cancel := context.WithTimeout(r.Context(), 3*time.Second)
+		defer cancel()
+		if err := inventory.Ready(ctx); err != nil {
+			slog.Warn("readiness check failed", "error", err)
+			writeJSON(w, http.StatusServiceUnavailable, status{"not-ready", cfg.Version, cfg.Environment, time.Now().UTC().Format(time.RFC3339)})
+			return
+		}
 		writeJSON(w, http.StatusOK, status{"ready", cfg.Version, cfg.Environment, time.Now().UTC().Format(time.RFC3339)})
 	})
-	mux.HandleFunc("GET /api/v1/summary", func(w http.ResponseWriter, _ *http.Request) {
-		writeJSON(w, http.StatusOK, map[string]any{
-			"cluster": "portfolio-eks", "mode": map[bool]string{true: "demo", false: "cluster"}[cfg.DemoMode],
-			"nodes": 3, "namespaces": 12, "pods": map[string]int{"running": 42, "pending": 1, "failed": 0},
-		})
+	mux.HandleFunc("GET /api/v1/summary", func(w http.ResponseWriter, r *http.Request) {
+		ctx, cancel := context.WithTimeout(r.Context(), 8*time.Second)
+		defer cancel()
+		summary, err := inventory.Summary(ctx)
+		if err != nil {
+			slog.Error("cluster summary failed", "error", err)
+			writeJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "cluster inventory is unavailable"})
+			return
+		}
+		writeJSON(w, http.StatusOK, summary)
 	})
 	return securityHeaders(mux)
 }

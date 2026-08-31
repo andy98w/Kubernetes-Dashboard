@@ -1,16 +1,37 @@
 # Deployment guide
 
-The AWS infrastructure layer is the next implementation milestone. Until it is
-complete, do not apply partial Terraform copied from the internet.
+The repository now contains a validated AWS infrastructure baseline. It creates
+a three-AZ VPC, EKS control plane, managed node group, control-plane and VPC flow
+logs, native EKS add-ons, KMS envelope encryption, access entries, and an AWS
+Budget. Nothing is applied automatically by CI.
 
-## Planned workflow
+## Safe deployment workflow
 
 1. Authenticate with a short-lived AWS IAM Identity Center session.
-2. Create the remote Terraform state bucket and lock table in a bootstrap stack.
-3. Apply the `dev` VPC/EKS environment from CI with manual approval.
-4. Bootstrap Argo CD once, then let the root application reconcile the platform.
-5. Build, scan, generate an SBOM, sign the image, and update its immutable digest.
-6. Run smoke, policy, load, and recovery checks and store evidence.
+2. Copy `infra/terraform/bootstrap/terraform.tfvars.example` to an untracked
+   `terraform.tfvars`, choose a globally unique bucket name, and apply the
+   bootstrap stack. The bucket uses versioning, KMS encryption, TLS-only access,
+   and native S3 state locking.
+3. Copy the bootstrap output into
+   `infra/terraform/environments/dev/backend.tf.example`, save it as
+   `backend.tf`, then copy `terraform.tfvars.example` to `terraform.tfvars`.
+4. Set `admin_principal_arn` to a role, never an IAM user. Keep the API private
+   when using a VPN or VPC runner; for a short portfolio demo, allow only your
+   current public `/32` in `public_access_cidrs`.
+5. Run `terraform plan -out=dev.tfplan`, inspect the complete plan, then apply
+   that saved plan. Creating the cluster incurs AWS charges.
+6. Configure kubectl with the `configure_kubectl` Terraform output. Bootstrap
+   Argo CD once, then let the root application reconcile platform components.
+7. Run smoke, policy, load, and recovery checks and store evidence.
+
+Run the repository-only checks without AWS credentials:
+
+```bash
+make terraform-check
+```
+
+The detailed commands and design boundaries are in
+[`infra/terraform/README.md`](../infra/terraform/README.md).
 
 ## Cost guardrails
 
@@ -18,6 +39,8 @@ EKS has a per-cluster hourly charge, and worker nodes, NAT gateways, load
 balancers, logs, and metrics add cost. Use AWS Budgets, tag all resources, prefer
 a single NAT gateway only in the portfolio profile, and destroy the environment
 after demonstrations. Production would use a NAT gateway per availability zone.
+The state bucket is protected by `prevent_destroy`, so retain it for audit and
+recovery or remove that guard only through a deliberate state-retention process.
 
 ## Required local tools
 

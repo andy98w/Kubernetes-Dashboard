@@ -46,7 +46,7 @@ look impressive in demos but create an unnecessarily dangerous security model.
 
 ## Local development
 
-Prerequisites: Go 1.25+, Node 24+, Docker, kubectl, Helm, and optionally kind.
+Prerequisites: Go 1.26+, Node 24+, Docker, kubectl, Helm, and optionally kind.
 
 ```bash
 make test
@@ -68,10 +68,12 @@ demo is not needed. Never commit Terraform state or AWS credentials.
 
 - [x] Repository architecture and production guardrails
 - [x] Go health/readiness API and container image
+- [x] Live Kubernetes node, namespace, and pod inventory API
 - [x] Helm workload with RBAC, PDB, autoscaling, and network policy
-- [ ] Kubernetes inventory and event APIs
+- [x] Terraform VPC/EKS baseline, encrypted remote-state bootstrap, and cost budget
+- [ ] Kubernetes event and workload detail APIs
 - [ ] Workload drill-down UI and Hubble flows
-- [ ] Full Terraform EKS environment and GitOps add-on bootstrap
+- [ ] GitOps platform add-on bootstrap
 - [ ] Load, failure, recovery, and security evidence in `docs/evidence/`
 
 See [docs/architecture.md](docs/architecture.md) for scope and engineering decisions.

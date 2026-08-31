@@ -1,21 +1,40 @@
 package httpapi
 
 import (
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
 	"github.com/andy98w/Kubernetes-Dashboard/api/internal/config"
+	"github.com/andy98w/Kubernetes-Dashboard/api/internal/kubernetes"
 )
 
 func TestHealth(t *testing.T) {
 	r := httptest.NewRequest(http.MethodGet, "/healthz", nil)
 	w := httptest.NewRecorder()
-	New(config.Config{Version: "test", Environment: "test"}).ServeHTTP(w, r)
+	New(config.Config{Version: "test", Environment: "test"}, kubernetes.DemoInventory{ClusterName: "test"}).ServeHTTP(w, r)
 	if w.Code != http.StatusOK {
 		t.Fatalf("expected 200, got %d", w.Code)
 	}
 	if got := w.Header().Get("X-Content-Type-Options"); got != "nosniff" {
 		t.Fatalf("expected security header, got %q", got)
+	}
+}
+
+func TestSummary(t *testing.T) {
+	r := httptest.NewRequest(http.MethodGet, "/api/v1/summary", nil)
+	w := httptest.NewRecorder()
+	New(config.Config{Version: "test", Environment: "test"}, kubernetes.DemoInventory{ClusterName: "recruiter-demo"}).ServeHTTP(w, r)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d", w.Code)
+	}
+	var summary kubernetes.Summary
+	if err := json.NewDecoder(w.Body).Decode(&summary); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	if summary.Cluster != "recruiter-demo" || summary.Mode != "demo" || summary.Nodes.Ready != 3 {
+		t.Fatalf("unexpected summary: %+v", summary)
 	}
 }

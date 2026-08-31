@@ -11,7 +11,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
-        with: { go-version: '1.25.x', cache-dependency-path: api/go.mod }
+        with: { go-version: '1.26.x', cache-dependency-path: api/go.sum }
       - run: go test ./...
         working-directory: api
       - run: go vet ./...
@@ -33,3 +33,14 @@ jobs:
       - uses: azure/setup-helm@v4
       - run: helm lint platform/apps/dashboard
       - run: helm template kubevista platform/apps/dashboard --namespace kubevista > /tmp/rendered.yaml
+  terraform:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+        with: { terraform_version: '1.16.0' }
+      - run: terraform fmt -check -recursive infra/terraform
+      - run: terraform init -backend=false && terraform validate
+        working-directory: infra/terraform/bootstrap
+      - run: terraform init -backend=false && terraform validate
+        working-directory: infra/terraform/environments/dev

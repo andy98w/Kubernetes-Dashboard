@@ -1,0 +1,15 @@
+aws_region         = "us-west-2"
+cluster_name       = "kubevista-dev"
+kubernetes_version = "1.36"
+
+# Use the role created by IAM Identity Center or a dedicated administrator role.
+admin_principal_arn = "arn:aws:iam::123456789012:role/AWSReservedSSO_AdministratorAccess_example"
+
+# Leave empty for a private-only API endpoint. For temporary local access, use
+# your exact public /32 address; never use 0.0.0.0/0.
+public_access_cidrs = []
+
+single_nat_gateway       = true
+monthly_budget_usd       = 100
+budget_notification_email = "you@example.com"
+

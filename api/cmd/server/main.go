@@ -12,6 +12,7 @@ import (
 
 	"github.com/andy98w/Kubernetes-Dashboard/api/internal/config"
 	"github.com/andy98w/Kubernetes-Dashboard/api/internal/httpapi"
+	cluster "github.com/andy98w/Kubernetes-Dashboard/api/internal/kubernetes"
 )
 
 func main() {
@@ -20,10 +21,15 @@ func main() {
 		slog.Error("invalid configuration", "error", err)
 		os.Exit(1)
 	}
+	inventory, err := cluster.New(cfg)
+	if err != nil {
+		slog.Error("initialize cluster inventory", "error", err)
+		os.Exit(1)
+	}
 
 	server := &http.Server{
 		Addr:              cfg.Address,
-		Handler:           httpapi.New(cfg),
+		Handler:           httpapi.New(cfg, inventory),
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       10 * time.Second,
 		WriteTimeout:      15 * time.Second,

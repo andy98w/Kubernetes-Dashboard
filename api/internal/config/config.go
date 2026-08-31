@@ -10,6 +10,8 @@ type Config struct {
 	Address     string
 	Environment string
 	Version     string
+	ClusterName string
+	Kubeconfig  string
 	DemoMode    bool
 }
 
@@ -18,6 +20,8 @@ func FromEnv() (Config, error) {
 		Address:     envOr("KUBEVISTA_ADDRESS", ":8080"),
 		Environment: envOr("KUBEVISTA_ENVIRONMENT", "development"),
 		Version:     envOr("KUBEVISTA_VERSION", "dev"),
+		ClusterName: envOr("KUBEVISTA_CLUSTER_NAME", "kubevista-dev"),
+		Kubeconfig:  os.Getenv("KUBECONFIG"),
 		DemoMode:    strings.EqualFold(os.Getenv("KUBEVISTA_DEMO_MODE"), "true"),
 	}
 	if !strings.HasPrefix(cfg.Address, ":") && !strings.Contains(cfg.Address, ":") {

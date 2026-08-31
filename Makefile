@@ -1,4 +1,4 @@
-.PHONY: test test-api test-web run-api run-web build-api build-web
+.PHONY: test test-api test-web run-api run-web build-api build-web terraform-check terraform-fmt terraform-validate
 
 test: test-api test-web
 
@@ -19,3 +19,14 @@ build-api:
 
 build-web:
 	cd web && npm ci && npm run build
+
+terraform-check: terraform-fmt terraform-validate
+
+terraform-fmt:
+	terraform fmt -check -recursive infra/terraform
+
+terraform-validate:
+	terraform -chdir=infra/terraform/bootstrap init -backend=false
+	terraform -chdir=infra/terraform/bootstrap validate
+	terraform -chdir=infra/terraform/environments/dev init -backend=false
+	terraform -chdir=infra/terraform/environments/dev validate

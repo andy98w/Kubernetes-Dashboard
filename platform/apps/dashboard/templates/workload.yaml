@@ -56,6 +56,8 @@ spec:
           env:
             - { name: KUBEVISTA_ENVIRONMENT, value: production }
             - { name: KUBEVISTA_VERSION, value: "{{ .Chart.AppVersion }}" }
+            - { name: KUBEVISTA_CLUSTER_NAME, value: {{ .Values.clusterName | quote }} }
+            - { name: KUBEVISTA_DEMO_MODE, value: "false" }
           readinessProbe: { httpGet: { path: /readyz, port: http }, periodSeconds: 5 }
           livenessProbe: { httpGet: { path: /healthz, port: http }, initialDelaySeconds: 10 }
           resources: {{ toYaml .Values.resources | nindent 12 }}
