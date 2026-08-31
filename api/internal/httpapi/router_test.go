@@ -38,3 +38,16 @@ func TestSummary(t *testing.T) {
 		t.Fatalf("unexpected summary: %+v", summary)
 	}
 }
+
+func TestMetrics(t *testing.T) {
+	r := httptest.NewRequest(http.MethodGet, "/metrics", nil)
+	w := httptest.NewRecorder()
+	New(config.Config{}, kubernetes.DemoInventory{}).ServeHTTP(w, r)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d", w.Code)
+	}
+	if got := w.Header().Get("Content-Type"); got == "" {
+		t.Fatal("expected metrics content type")
+	}
+}

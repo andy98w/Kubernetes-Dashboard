@@ -1,20 +1,17 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: kubevista-platform
+  name: platform-config
   namespace: argocd
+  annotations: { argocd.argoproj.io/sync-wave: "5" }
 spec:
-  project: default
+  project: kubevista
   source:
     repoURL: https://github.com/andy98w/Kubernetes-Dashboard.git
     targetRevision: main
-    path: platform/argocd/applications
-    directory:
-      recurse: true
-  destination:
-    server: https://kubernetes.default.svc
-    namespace: argocd
+    path: platform/apps/platform-config
+  destination: { server: https://kubernetes.default.svc, namespace: kube-system }
   syncPolicy:
     automated: { prune: true, selfHeal: true }
-    syncOptions: [CreateNamespace=true, ServerSideApply=true]
+    syncOptions: [ServerSideApply=true]
     retry: { limit: 5 }

@@ -58,6 +58,8 @@ spec:
             - { name: KUBEVISTA_VERSION, value: "{{ .Chart.AppVersion }}" }
             - { name: KUBEVISTA_CLUSTER_NAME, value: {{ .Values.clusterName | quote }} }
             - { name: KUBEVISTA_DEMO_MODE, value: "false" }
+            - { name: KUBEVISTA_TRACE_SAMPLE_RATIO, value: {{ .Values.telemetry.traceSampleRatio | quote }} }
+            - { name: OTEL_EXPORTER_OTLP_ENDPOINT, value: {{ .Values.telemetry.otlpEndpoint | quote }} }
           readinessProbe: { httpGet: { path: /readyz, port: http }, periodSeconds: 5 }
           livenessProbe: { httpGet: { path: /healthz, port: http }, initialDelaySeconds: 10 }
           resources: {{ toYaml .Values.resources | nindent 12 }}
@@ -102,8 +104,33 @@ spec:
   ingress:
     - from: [{ namespaceSelector: { matchLabels: { kubernetes.io/metadata.name: ingress-system } } }]
       ports: [{ protocol: TCP, port: 8080 }]
+    - from: [{ namespaceSelector: { matchLabels: { kubernetes.io/metadata.name: observability } } }]
+      ports: [{ protocol: TCP, port: 8080 }]
+    - from: [{ podSelector: { matchLabels: { app.kubernetes.io/component: smoke-test } } }]
+      ports: [{ protocol: TCP, port: 8080 }]
+    {{- if .Values.ingress.enabled }}
+    - from: [{ ipBlock: { cidr: {{ .Values.networkPolicy.loadBalancerSourceCidr | quote }} } }]
+      ports: [{ protocol: TCP, port: 8080 }]
+    {{- end }}
   egress:
     - to: [{ namespaceSelector: { matchLabels: { kubernetes.io/metadata.name: kube-system } } }]
       ports: [{ protocol: UDP, port: 53 }, { protocol: TCP, port: 53 }]
     - to: [{ ipBlock: { cidr: {{ .Values.networkPolicy.apiServerCidr | quote }} } }]
       ports: [{ protocol: TCP, port: 443 }]
+    - to: [{ namespaceSelector: { matchLabels: { kubernetes.io/metadata.name: observability } } }]
+      ports: [{ protocol: TCP, port: 4317 }]
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: kubevista-api
+  labels: { release: monitoring }
+  annotations:
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+spec:
+  selector:
+    matchLabels: { app.kubernetes.io/name: kubevista }
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 30s

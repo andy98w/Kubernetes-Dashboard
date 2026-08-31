@@ -1,19 +1,16 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: kubevista-platform
+  name: kubevista-dashboard
   namespace: argocd
+  annotations: { argocd.argoproj.io/sync-wave: "30" }
 spec:
-  project: default
+  project: kubevista
   source:
     repoURL: https://github.com/andy98w/Kubernetes-Dashboard.git
     targetRevision: main
-    path: platform/argocd/applications
-    directory:
-      recurse: true
-  destination:
-    server: https://kubernetes.default.svc
-    namespace: argocd
+    path: platform/apps/dashboard
+  destination: { server: https://kubernetes.default.svc, namespace: kubevista }
   syncPolicy:
     automated: { prune: true, selfHeal: true }
     syncOptions: [CreateNamespace=true, ServerSideApply=true]

@@ -9,6 +9,7 @@ import (
 
 	"github.com/andy98w/Kubernetes-Dashboard/api/internal/config"
 	cluster "github.com/andy98w/Kubernetes-Dashboard/api/internal/kubernetes"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 type status struct {
@@ -44,6 +45,7 @@ func New(cfg config.Config, inventory cluster.Inventory) http.Handler {
 		}
 		writeJSON(w, http.StatusOK, summary)
 	})
+	mux.Handle("GET /metrics", promhttp.Handler())
 	return securityHeaders(mux)
 }
 

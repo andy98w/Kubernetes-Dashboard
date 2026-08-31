@@ -44,6 +44,13 @@ variable "public_access_cidrs" {
   description = "CIDRs allowed to reach the public API endpoint when it is enabled."
   type        = list(string)
   default     = []
+
+  validation {
+    condition = alltrue([
+      for cidr in var.public_access_cidrs : can(cidrnetmask(cidr)) && cidr != "0.0.0.0/0" && cidr != "::/0"
+    ])
+    error_message = "public_access_cidrs must contain valid, restricted CIDRs; world-open IPv4 and IPv6 ranges are forbidden."
+  }
 }
 
 variable "single_nat_gateway" {
@@ -71,9 +78,19 @@ variable "budget_notification_email" {
   nullable    = true
 }
 
+variable "external_secret_prefix" {
+  description = "Secrets Manager name prefix readable by External Secrets. Include the trailing slash."
+  type        = string
+  default     = "kubevista/"
+
+  validation {
+    condition     = length(var.external_secret_prefix) > 1 && endswith(var.external_secret_prefix, "/")
+    error_message = "external_secret_prefix must be non-empty and end with a slash."
+  }
+}
+
 variable "tags" {
   description = "Additional tags applied to all resources."
   type        = map(string)
   default     = {}
 }
-

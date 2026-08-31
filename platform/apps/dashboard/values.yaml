@@ -11,7 +11,19 @@ autoscaling:
   minReplicas: 2
   maxReplicas: 6
   cpuTarget: 70
+telemetry:
+  otlpEndpoint: http://otel-gateway-opentelemetry-collector.observability.svc.cluster.local:4317
+  traceSampleRatio: "0.25"
+ingress:
+  enabled: false
+  className: alb
+  host: ""
+  annotations:
+    alb.ingress.kubernetes.io/scheme: internal
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/healthcheck-path: /healthz
 networkPolicy:
   # Kubernetes NetworkPolicy cannot select the managed EKS control plane by
   # namespace. Restrict this to the cluster endpoint CIDR in each environment.
-  apiServerCidr: 0.0.0.0/0
+  apiServerCidr: 10.42.0.0/16
+  loadBalancerSourceCidr: 10.42.0.0/16

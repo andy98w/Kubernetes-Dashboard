@@ -1,4 +1,4 @@
-.PHONY: test test-api test-web run-api run-web build-api build-web terraform-check terraform-fmt terraform-validate
+.PHONY: test test-api test-web run-api run-web build-api build-web platform-check terraform-check terraform-fmt terraform-validate
 
 test: test-api test-web
 
@@ -19,6 +19,9 @@ build-api:
 
 build-web:
 	cd web && npm ci && npm run build
+
+platform-check:
+	./scripts/validate-platform.sh
 
 terraform-check: terraform-fmt terraform-validate
 

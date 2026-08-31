@@ -13,6 +13,8 @@ import (
 	"github.com/andy98w/Kubernetes-Dashboard/api/internal/config"
 	"github.com/andy98w/Kubernetes-Dashboard/api/internal/httpapi"
 	cluster "github.com/andy98w/Kubernetes-Dashboard/api/internal/kubernetes"
+	"github.com/andy98w/Kubernetes-Dashboard/api/internal/telemetry"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 )
 
 func main() {
@@ -26,10 +28,15 @@ func main() {
 		slog.Error("initialize cluster inventory", "error", err)
 		os.Exit(1)
 	}
+	shutdownTelemetry, err := telemetry.Setup(context.Background(), cfg)
+	if err != nil {
+		slog.Error("initialize telemetry", "error", err)
+		os.Exit(1)
+	}
 
 	server := &http.Server{
 		Addr:              cfg.Address,
-		Handler:           httpapi.New(cfg, inventory),
+		Handler:           otelhttp.NewHandler(httpapi.New(cfg, inventory), "kubevista.http"),
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       10 * time.Second,
 		WriteTimeout:      15 * time.Second,
@@ -51,6 +58,10 @@ func main() {
 	defer cancel()
 	if err := server.Shutdown(shutdownCtx); err != nil {
 		slog.Error("graceful shutdown failed", "error", err)
+		os.Exit(1)
+	}
+	if err := shutdownTelemetry(shutdownCtx); err != nil {
+		slog.Error("telemetry shutdown failed", "error", err)
 		os.Exit(1)
 	}
 }

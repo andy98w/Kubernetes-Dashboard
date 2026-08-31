@@ -8,12 +8,10 @@ a reason to exist, a documented trade-off, and an automated verification path.
 
 - A Go control-plane API using Kubernetes `client-go` and least-privilege RBAC
 - A React/TypeScript dashboard for workload and cluster health
-- Terraform-managed VPC and Amazon EKS infrastructure
+- Terraform-managed three-tier VPC and Amazon EKS infrastructure
 - GitOps delivery with Argo CD and Helm
-- Cilium network policy and Hubble network visibility
-- EKS Pod Identity, External Secrets, cert-manager, and AWS Load Balancer Controller
-- Prometheus, Grafana, Loki, Tempo, and OpenTelemetry telemetry
-- Kyverno policy enforcement, Trivy image scanning, and signed build artifacts
+- AWS VPC CNI, EBS CSI, EKS Pod Identity, External Secrets, and AWS Load Balancer Controller
+- Prometheus, Grafana, Loki, Tempo, and OpenTelemetry metrics, logs, and traces
 - CI checks, autoscaling, disruption budgets, probes, and graceful shutdown
 
 ## Architecture
@@ -25,10 +23,10 @@ Browser -> ALB/HTTPS -> dashboard web -> Go API -> Kubernetes API
                             +-> metrics/logs -> Prometheus/Loki -> Grafana
 
 GitHub Actions -> ECR -> Argo CD -> EKS
-Terraform --------------------^     |-- Cilium + Hubble
-                                    |-- Karpenter
+Terraform --------------------^     |-- VPC CNI + EBS CSI
+                                    |-- Pod Identity controllers
                                     |-- External Secrets
-                                    `-- Kyverno
+                                    `-- OTel + Prometheus stack
 ```
 
 The dashboard is intentionally **read-only by default**. Mutating cluster tools
@@ -43,6 +41,11 @@ look impressive in demos but create an unnecessarily dangerous security model.
 | `infra/terraform/` | AWS network, EKS, IAM, and add-ons |
 | `platform/` | Argo CD and Helm definitions |
 | `docs/` | Architecture decisions, runbooks, and threat model |
+
+The complete eight-layer inventory is in
+[docs/platform-stack.md](docs/platform-stack.md), and operational commands are
+in [docs/runbook.md](docs/runbook.md). Upstream design sources are collected in
+[docs/references.md](docs/references.md).
 
 ## Local development
 
@@ -71,9 +74,13 @@ demo is not needed. Never commit Terraform state or AWS credentials.
 - [x] Live Kubernetes node, namespace, and pod inventory API
 - [x] Helm workload with RBAC, PDB, autoscaling, and network policy
 - [x] Terraform VPC/EKS baseline, encrypted remote-state bootstrap, and cost budget
+- [x] Pod Identity-backed AWS integrations and encrypted EBS storage
+- [x] GitOps definitions for Prometheus, Grafana, Loki, Tempo, and OpenTelemetry
 - [ ] Kubernetes event and workload detail APIs
 - [ ] Workload drill-down UI and Hubble flows
-- [ ] GitOps platform add-on bootstrap
+- [x] GitOps platform add-on bootstrap definitions
+- [ ] Cilium/Hubble advanced networking profile
+- [ ] Kyverno policy, image signing, SBOM, and runtime security profile
 - [ ] Load, failure, recovery, and security evidence in `docs/evidence/`
 
 See [docs/architecture.md](docs/architecture.md) for scope and engineering decisions.

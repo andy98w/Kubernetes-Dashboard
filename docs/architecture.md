@@ -11,9 +11,8 @@ explainable engineering over a long list of logos.
 - **Compute:** EKS managed control plane and managed node group; Karpenter is a
   later optimization after the baseline is measurable.
 - **Networking:** AWS VPC CNI is the safest initial EKS default. Cilium runs in
-  network-policy-only mode with Hubble visibility. Full CNI replacement is an
-  advanced profile, not the default, because it changes bootstrap and support
-  characteristics.
+  the baseline. Cilium/Hubble remains an advanced profile rather than being
+  installed beside VPC CNI without an explicit chaining and support decision.
 - **Ingress:** AWS Load Balancer Controller, ACM TLS, Route 53 DNS.
 - **Identity:** EKS access entries for humans and EKS Pod Identity per workload.
 - **Delivery:** GitHub Actions builds/scans/signs; Argo CD reconciles deployment.
@@ -23,8 +22,14 @@ explainable engineering over a long list of logos.
   through External Secrets, Kyverno admission policy, Trivy, read-only RBAC,
   default-deny network policy, Pod Security Standards.
 
-Each environment must narrow the dashboard chart's `networkPolicy.apiServerCidr`
-from its portable bootstrap default to the private EKS API endpoint CIDR.
+The dashboard chart defaults `networkPolicy.apiServerCidr` to the dev VPC CIDR;
+each additional environment must replace it with its own private endpoint CIDR.
+
+The observability deployment is intentionally sized for a portfolio cluster:
+Prometheus, Loki, and Tempo retain data on encrypted gp3 volumes, but Loki and
+Tempo run as single replicas. A production profile should use object storage,
+multi-AZ replicas, tested restore procedures, and retention based on SLO and
+compliance requirements.
 
 ## Production profile versus portfolio profile
 

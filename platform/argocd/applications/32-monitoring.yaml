@@ -1,0 +1,56 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: monitoring
+  namespace: argocd
+  annotations: { argocd.argoproj.io/sync-wave: "10" }
+spec:
+  project: kubevista
+  source:
+    repoURL: https://prometheus-community.github.io/helm-charts
+    chart: kube-prometheus-stack
+    targetRevision: 88.6.1
+    helm:
+      releaseName: monitoring
+      values: |
+        grafana:
+          persistence:
+            enabled: true
+            type: sts
+            storageClassName: gp3
+            accessModes: [ReadWriteOnce]
+            size: 5Gi
+          resources:
+            requests: { cpu: 100m, memory: 256Mi }
+            limits: { cpu: 500m, memory: 1Gi }
+          additionalDataSources:
+            - { name: Loki, uid: loki, type: loki, access: proxy, url: http://loki-gateway.observability.svc.cluster.local }
+            - { name: Tempo, uid: tempo, type: tempo, access: proxy, url: http://tempo.observability.svc.cluster.local:3200 }
+        prometheus:
+          prometheusSpec:
+            retention: 7d
+            retentionSize: 15GB
+            serviceMonitorSelectorNilUsesHelmValues: false
+            podMonitorSelectorNilUsesHelmValues: false
+            resources:
+              requests: { cpu: 300m, memory: 1Gi }
+              limits: { cpu: 2, memory: 3Gi }
+            storageSpec:
+              volumeClaimTemplate:
+                spec:
+                  storageClassName: gp3
+                  accessModes: [ReadWriteOnce]
+                  resources: { requests: { storage: 20Gi } }
+        alertmanager:
+          alertmanagerSpec:
+            storage:
+              volumeClaimTemplate:
+                spec:
+                  storageClassName: gp3
+                  accessModes: [ReadWriteOnce]
+                  resources: { requests: { storage: 5Gi } }
+  destination: { server: https://kubernetes.default.svc, namespace: observability }
+  syncPolicy:
+    automated: { prune: true, selfHeal: true }
+    syncOptions: [CreateNamespace=true, ServerSideApply=true]
+    retry: { limit: 5 }

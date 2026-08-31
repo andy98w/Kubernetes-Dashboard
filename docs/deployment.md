@@ -24,10 +24,29 @@ Budget. Nothing is applied automatically by CI.
    Argo CD once, then let the root application reconcile platform components.
 7. Run smoke, policy, load, and recovery checks and store evidence.
 
+Bootstrap the pinned Argo CD release after the cluster is reachable:
+
+```bash
+helm repo add argo https://argoproj.github.io/argo-helm
+helm repo update argo
+helm upgrade --install argocd argo/argo-cd \
+  --version 10.4.2 \
+  --namespace argocd \
+  --create-namespace \
+  --values platform/argocd/values.yaml
+kubectl apply -f platform/argocd/root-application.yaml
+```
+
+The root application creates a restricted Argo CD project and child
+applications in sync waves: AWS controllers first, storage configuration next,
+observability after that, and KubeVista last. See
+[`docs/runbook.md`](runbook.md) for verification and troubleshooting commands.
+
 Run the repository-only checks without AWS credentials:
 
 ```bash
 make terraform-check
+make platform-check
 ```
 
 The detailed commands and design boundaries are in

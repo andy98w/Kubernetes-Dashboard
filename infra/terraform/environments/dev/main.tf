@@ -71,10 +71,20 @@ module "eks" {
     eks-pod-identity-agent = {
       before_compute = true
     }
+    aws-ebs-csi-driver = {
+      pod_identity_association = [{
+        role_arn        = module.ebs_csi_pod_identity.iam_role_arn
+        service_account = "ebs-csi-controller-sa"
+      }]
+    }
     kube-proxy = {}
     vpc-cni = {
       before_compute = true
       most_recent    = true
+      pod_identity_association = [{
+        role_arn        = module.vpc_cni_pod_identity.iam_role_arn
+        service_account = "aws-node"
+      }]
     }
   }
 
@@ -153,4 +163,3 @@ resource "aws_budgets_budget" "monthly" {
     }
   }
 }
-

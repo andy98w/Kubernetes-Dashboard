@@ -1,0 +1,55 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: otel-agent
+  namespace: argocd
+  annotations: { argocd.argoproj.io/sync-wave: "20" }
+spec:
+  project: kubevista
+  source:
+    repoURL: https://open-telemetry.github.io/opentelemetry-helm-charts
+    chart: opentelemetry-collector
+    targetRevision: 0.172.0
+    helm:
+      releaseName: otel-agent
+      values: |
+        mode: daemonset
+        presets:
+          logsCollection: { enabled: true, includeCollectorLogs: false }
+          kubernetesAttributes: { enabled: true }
+          hostMetrics: { enabled: true }
+          kubeletMetrics: { enabled: true }
+        image: { repository: otel/opentelemetry-collector-k8s }
+        alternateConfig:
+          extensions:
+            health_check: { endpoint: "${env:MY_POD_IP}:13133" }
+          processors:
+            memory_limiter: { check_interval: 5s, limit_percentage: 80, spike_limit_percentage: 25 }
+            batch: {}
+          exporters:
+            otlphttp/loki:
+              endpoint: http://loki-gateway.observability.svc.cluster.local/otlp
+            otlp/gateway:
+              endpoint: otel-gateway-opentelemetry-collector.observability.svc.cluster.local:4317
+              tls: { insecure: true }
+          service:
+            extensions: [health_check]
+            pipelines:
+              logs: { receivers: [], processors: [memory_limiter, batch], exporters: [otlphttp/loki] }
+              metrics: { receivers: [], processors: [memory_limiter, batch], exporters: [otlp/gateway] }
+        ports:
+          otlp: { enabled: false }
+          otlp-http: { enabled: false }
+          jaeger-compact: { enabled: false }
+          jaeger-thrift: { enabled: false }
+          jaeger-grpc: { enabled: false }
+          zipkin: { enabled: false }
+          metrics: { enabled: true, containerPort: 8888, servicePort: 8888, protocol: TCP }
+        resources:
+          requests: { cpu: 100m, memory: 256Mi }
+          limits: { cpu: 500m, memory: 512Mi }
+  destination: { server: https://kubernetes.default.svc, namespace: observability }
+  syncPolicy:
+    automated: { prune: true, selfHeal: true }
+    syncOptions: [CreateNamespace=true, ServerSideApply=true]
+    retry: { limit: 5 }

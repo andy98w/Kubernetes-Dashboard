@@ -13,3 +13,5 @@ single_nat_gateway       = true
 monthly_budget_usd       = 100
 budget_notification_email = "you@example.com"
 
+# External Secrets can read only Secrets Manager entries under this name prefix.
+external_secret_prefix = "kubevista/"

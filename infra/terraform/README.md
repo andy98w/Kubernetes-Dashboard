@@ -4,7 +4,7 @@ This directory is deliberately split into two Terraform root modules:
 
 - `bootstrap/` creates the encrypted, versioned S3 state bucket and KMS key.
 - `environments/dev/` creates the portfolio VPC, EKS cluster, nodes, logs,
-  access entry, managed add-ons, and cost budget.
+  access entry, managed add-ons, Pod Identity roles, and cost budget.
 
 Terraform and provider/module versions are constrained and their dependency
 locks are committed. CI runs formatting, initialization, and static validation
@@ -42,6 +42,12 @@ The default API endpoint is private-only. A local workstation can reach it only
 through private connectivity. A temporary demo may set `public_access_cidrs` to
 the operator's exact public `/32`; broad public CIDRs are intentionally excluded
 from the example.
+
+The EKS add-on lifecycle owns the Pod Identity associations for VPC CNI and EBS
+CSI. Terraform separately associates service accounts for AWS Load Balancer
+Controller and External Secrets. External Secrets can read only Secrets Manager
+resources under `external_secret_prefix`; no AWS access keys are stored in
+Kubernetes.
 
 ## Production boundaries
 
