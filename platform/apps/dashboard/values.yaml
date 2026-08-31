@@ -1,15 +1,29 @@
 image:
   repository: ghcr.io/andy98w/kubevista-api
   tag: "0.1.0"
+  digest: ""
+  pullPolicy: IfNotPresent
+webImage:
+  repository: ghcr.io/andy98w/kubevista-web
+  tag: "0.1.0"
+  digest: ""
   pullPolicy: IfNotPresent
 replicas: 2
+webReplicas: 2
 clusterName: kubevista-dev
 resources:
   requests: { cpu: 100m, memory: 128Mi }
   limits: { cpu: 500m, memory: 256Mi }
+webResources:
+  requests: { cpu: 25m, memory: 32Mi }
+  limits: { cpu: 200m, memory: 96Mi }
 autoscaling:
   minReplicas: 2
   maxReplicas: 6
+  cpuTarget: 70
+webAutoscaling:
+  minReplicas: 2
+  maxReplicas: 4
   cpuTarget: 70
 telemetry:
   otlpEndpoint: http://otel-gateway-opentelemetry-collector.observability.svc.cluster.local:4317

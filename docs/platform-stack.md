@@ -44,6 +44,7 @@ No long-lived AWS access key is placed in a pod or Kubernetes Secret.
 | EBS CSI | EKS Pod Identity | EBS CSI policy, associated to `kube-system/ebs-csi-controller-sa` |
 | Load Balancer Controller | EKS Pod Identity | ELB/EC2 controller policy, associated to its service account |
 | External Secrets | EKS Pod Identity | Read-only Secrets Manager access under `kubevista/` by default |
+| GitHub image publisher | GitHub OIDC | Push-only access to the two KubeVista ECR repositories |
 
 `enable_cluster_creator_admin_permissions` is disabled. Human access is
 declarative, and IAM users are rejected by variable validation. Pod Identity
@@ -121,9 +122,10 @@ operator creates that AWS secret.
 
 KubeVista's ALB Ingress is disabled by default so repository validation cannot
 create a billable load balancer. Enabling it creates an internal ALB with IP
-targets and a `/healthz` check; the NetworkPolicy then permits only the VPC CIDR
-to the API port. Public exposure requires a separate authentication and threat
-model decision.
+targets and a `/healthz` check. The browser reaches only the unprivileged web
+Deployment; NGINX proxies `/api` to the internal Go Service. Separate
+NetworkPolicies permit ALB traffic to the web tier and web traffic to the API.
+Public exposure requires a separate authentication and threat-model decision.
 
 ## 7. Applications and testing
 
@@ -138,9 +140,11 @@ Testing layers:
 - HTTP contract tests for health, summary, and Prometheus metrics;
 - `go vet` and a static Linux build;
 - React/TypeScript production compilation;
+- unprivileged, read-only frontend container with restrictive browser headers;
 - Helm lint and render for every local and third-party chart;
 - Terraform formatting, dependency initialization, and validation;
-- a hardened Helm smoke-test pod that calls `/healthz` through the Service;
+- a hardened Helm smoke-test pod that checks API health, proxied web health,
+  and the rendered application shell;
 - GitHub Actions repeats all repository-only checks on every pull request.
 
 ## 8. Monitoring and observability
@@ -168,7 +172,8 @@ retention enforcement.
 
 ## Security and cost boundaries
 
-- CI never runs `terraform apply` and does not need AWS credentials.
+- Pull-request CI never needs AWS credentials. The release-only image workflow
+  exchanges GitHub OIDC for a short-lived, repository-scoped ECR publisher role.
 - Terraform state uses a versioned, KMS-encrypted, TLS-only S3 bucket with native
   lock files and `prevent_destroy`.
 - Private endpoint access needs VPN/VPC connectivity; temporary public access is

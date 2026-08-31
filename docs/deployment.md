@@ -11,7 +11,8 @@ Budget. Nothing is applied automatically by CI.
 2. Copy `infra/terraform/bootstrap/terraform.tfvars.example` to an untracked
    `terraform.tfvars`, choose a globally unique bucket name, and apply the
    bootstrap stack. The bucket uses versioning, KMS encryption, TLS-only access,
-   and native S3 state locking.
+   and native S3 state locking. This stack also creates the two persistent ECR
+   repositories and the narrow GitHub image-publisher role.
 3. Copy the bootstrap output into
    `infra/terraform/environments/dev/backend.tf.example`, save it as
    `backend.tf`, then copy `terraform.tfvars.example` to `terraform.tfvars`.
@@ -52,6 +53,22 @@ make platform-check
 The detailed commands and design boundaries are in
 [`infra/terraform/README.md`](../infra/terraform/README.md).
 
+## Application image publication
+
+The `Build and sign application images` workflow runs manually or for a `v*`
+tag. Before running it, create a protected GitHub Environment named
+`kubevista-images` with `AWS_ACCOUNT_ID`, `AWS_REGION`, and
+`AWS_IMAGE_PUBLISHER_ROLE_ARN` environment variables. Copy the role ARN from
+the `github_image_publisher_role_arn` bootstrap output. The role trust policy
+accepts only this repository, this environment, and the STS audience.
+
+Each API and web build is pushed as `sha-<full commit>`. ECR rejects tag
+replacement, scans the image on push, expires untagged layers after seven days,
+and keeps the latest 20 application tags. BuildKit publishes an SBOM and SLSA
+provenance attestation; Cosign signs the immutable digest with GitHub OIDC.
+Deploy the digest reported in the workflow summary, not a mutable tag. See
+[`docs/supply-chain.md`](supply-chain.md) for verification commands.
+
 ## Cost guardrails
 
 EKS has a per-cluster hourly charge, and worker nodes, NAT gateways, load
@@ -60,6 +77,8 @@ a single NAT gateway only in the portfolio profile, and destroy the environment
 after demonstrations. Production would use a NAT gateway per availability zone.
 The state bucket is protected by `prevent_destroy`, so retain it for audit and
 recovery or remove that guard only through a deliberate state-retention process.
+ECR storage is much cheaper than a running cluster but is not free; the lifecycle
+policy bounds accumulated layers.
 
 ## Required local tools
 

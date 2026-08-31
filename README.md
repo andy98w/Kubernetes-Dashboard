@@ -13,6 +13,7 @@ a reason to exist, a documented trade-off, and an automated verification path.
 - AWS VPC CNI, EBS CSI, EKS Pod Identity, External Secrets, and AWS Load Balancer Controller
 - Prometheus, Grafana, Loki, Tempo, and OpenTelemetry metrics, logs, and traces
 - CI checks, autoscaling, disruption budgets, probes, and graceful shutdown
+- Immutable ECR images with SBOM/provenance attestations and keyless Cosign signatures
 
 ## Architecture
 
@@ -47,6 +48,11 @@ The complete eight-layer inventory is in
 in [docs/runbook.md](docs/runbook.md). Upstream design sources are collected in
 [docs/references.md](docs/references.md).
 
+The frontend deliberately avoids a generic component-library look. Its visual
+and data-integrity rules are documented in [docs/frontend.md](docs/frontend.md),
+and the container trust path is documented in
+[docs/supply-chain.md](docs/supply-chain.md).
+
 ## Local development
 
 Prerequisites: Go 1.26+, Node 24+, Docker, kubectl, Helm, and optionally kind.
@@ -79,8 +85,9 @@ demo is not needed. Never commit Terraform state or AWS credentials.
 - [ ] Kubernetes event and workload detail APIs
 - [ ] Workload drill-down UI and Hubble flows
 - [x] GitOps platform add-on bootstrap definitions
+- [x] Deployable web tier and signed ECR image supply chain
 - [ ] Cilium/Hubble advanced networking profile
-- [ ] Kyverno policy, image signing, SBOM, and runtime security profile
+- [ ] Kyverno signature enforcement and runtime security profile
 - [ ] Load, failure, recovery, and security evidence in `docs/evidence/`
 
 See [docs/architecture.md](docs/architecture.md) for scope and engineering decisions.

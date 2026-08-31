@@ -2,7 +2,7 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: kubevista-api
+  name: kubevista-web
   annotations: {{ toYaml .Values.ingress.annotations | nindent 4 }}
 spec:
   ingressClassName: {{ .Values.ingress.className }}
@@ -16,6 +16,6 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: kubevista-api
+                name: kubevista-web
                 port: { name: http }
 {{- end }}

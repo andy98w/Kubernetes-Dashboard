@@ -19,7 +19,11 @@ spec:
   containers:
     - name: health-check
       image: busybox:1.37.0
-      command: [wget, -qO-, --timeout=5, http://kubevista-api/healthz]
+      command: [sh, -ec]
+      args:
+        - wget -qO- --timeout=5 http://kubevista-api/healthz;
+          wget -qO- --timeout=5 http://kubevista-web/healthz;
+          wget -qO- --timeout=5 http://kubevista-web/ | grep -q KubeVista
       resources:
         requests: { cpu: 5m, memory: 8Mi }
         limits: { cpu: 50m, memory: 32Mi }

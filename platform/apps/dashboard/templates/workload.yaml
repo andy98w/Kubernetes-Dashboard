@@ -31,14 +31,14 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: kubevista-api
-  labels: { app.kubernetes.io/name: kubevista }
+  labels: { app.kubernetes.io/name: kubevista, app.kubernetes.io/component: api }
 spec:
   replicas: {{ .Values.replicas }}
   strategy: { type: RollingUpdate, rollingUpdate: { maxUnavailable: 0, maxSurge: 1 } }
-  selector: { matchLabels: { app.kubernetes.io/name: kubevista } }
+  selector: { matchLabels: { app.kubernetes.io/name: kubevista, app.kubernetes.io/component: api } }
   template:
     metadata:
-      labels: { app.kubernetes.io/name: kubevista }
+      labels: { app.kubernetes.io/name: kubevista, app.kubernetes.io/component: api }
       annotations: { prometheus.io/scrape: "true", prometheus.io/port: "8080" }
     spec:
       serviceAccountName: kubevista
@@ -47,10 +47,14 @@ spec:
         - maxSkew: 1
           topologyKey: kubernetes.io/hostname
           whenUnsatisfiable: DoNotSchedule
-          labelSelector: { matchLabels: { app.kubernetes.io/name: kubevista } }
+          labelSelector: { matchLabels: { app.kubernetes.io/name: kubevista, app.kubernetes.io/component: api } }
       containers:
         - name: api
+          {{- if .Values.image.digest }}
+          image: "{{ .Values.image.repository }}@{{ .Values.image.digest }}"
+          {{- else }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          {{- end }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports: [{ name: http, containerPort: 8080 }]
           env:
@@ -70,9 +74,9 @@ spec:
 ---
 apiVersion: v1
 kind: Service
-metadata: { name: kubevista-api, labels: { app.kubernetes.io/name: kubevista } }
+metadata: { name: kubevista-api, labels: { app.kubernetes.io/name: kubevista, app.kubernetes.io/component: api } }
 spec:
-  selector: { app.kubernetes.io/name: kubevista }
+  selector: { app.kubernetes.io/name: kubevista, app.kubernetes.io/component: api }
   ports: [{ name: http, port: 80, targetPort: http }]
 ---
 apiVersion: policy/v1
@@ -80,7 +84,7 @@ kind: PodDisruptionBudget
 metadata: { name: kubevista-api }
 spec:
   minAvailable: 1
-  selector: { matchLabels: { app.kubernetes.io/name: kubevista } }
+  selector: { matchLabels: { app.kubernetes.io/name: kubevista, app.kubernetes.io/component: api } }
 ---
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
@@ -99,19 +103,15 @@ apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata: { name: kubevista-api }
 spec:
-  podSelector: { matchLabels: { app.kubernetes.io/name: kubevista } }
+  podSelector: { matchLabels: { app.kubernetes.io/name: kubevista, app.kubernetes.io/component: api } }
   policyTypes: [Ingress, Egress]
   ingress:
-    - from: [{ namespaceSelector: { matchLabels: { kubernetes.io/metadata.name: ingress-system } } }]
+    - from: [{ podSelector: { matchLabels: { app.kubernetes.io/name: kubevista, app.kubernetes.io/component: web } } }]
       ports: [{ protocol: TCP, port: 8080 }]
     - from: [{ namespaceSelector: { matchLabels: { kubernetes.io/metadata.name: observability } } }]
       ports: [{ protocol: TCP, port: 8080 }]
     - from: [{ podSelector: { matchLabels: { app.kubernetes.io/component: smoke-test } } }]
       ports: [{ protocol: TCP, port: 8080 }]
-    {{- if .Values.ingress.enabled }}
-    - from: [{ ipBlock: { cidr: {{ .Values.networkPolicy.loadBalancerSourceCidr | quote }} } }]
-      ports: [{ protocol: TCP, port: 8080 }]
-    {{- end }}
   egress:
     - to: [{ namespaceSelector: { matchLabels: { kubernetes.io/metadata.name: kube-system } } }]
       ports: [{ protocol: UDP, port: 53 }, { protocol: TCP, port: 53 }]
@@ -129,7 +129,7 @@ metadata:
     argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
 spec:
   selector:
-    matchLabels: { app.kubernetes.io/name: kubevista }
+    matchLabels: { app.kubernetes.io/name: kubevista, app.kubernetes.io/component: api }
   endpoints:
     - port: http
       path: /metrics

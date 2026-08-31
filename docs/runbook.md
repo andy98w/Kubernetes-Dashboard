@@ -22,6 +22,10 @@ CD applications and renders them with the committed values.
 5. Install Argo CD `10.4.2` with `platform/argocd/values.yaml`.
 6. Apply `platform/argocd/root-application.yaml`.
 
+Publish application images before the dashboard sync. The release workflow
+prints both signed digests; set the Helm image repositories/tags to those
+artifacts or pin the full digest in an environment override before promotion.
+
 Do not apply the example ExternalSecret until the source secret exists:
 
 ```bash
@@ -81,6 +85,7 @@ kubectl get storageclass gp3
 kubectl get pods,pvc -n observability
 kubectl get servicemonitors -A
 helm test kubevista -n kubevista
+kubectl get deploy,svc,hpa,pdb,networkpolicy -n kubevista
 ```
 
 Expected results: the cluster is `ACTIVE`; two nodes are `Ready`; all Argo CD
@@ -109,6 +114,7 @@ the terminal; do not paste them into tickets, chat, screenshots, or commits.
 | ExternalSecret reports authentication failure | The ClusterSecretStore must have no `auth` block for Pod Identity; verify association and secret prefix |
 | Grafana has no OTel data | Verify OTel collector health, service DNS, network policy, ServiceMonitor discovery, and exporter errors |
 | KubeVista readiness is 503 | The service account cannot list namespaces or the API is unavailable; inspect RBAC and API audit logs |
+| Web health is 502/503 | Check API endpoints, web-to-API NetworkPolicy, CoreDNS, and NGINX logs |
 | Argo application is OutOfSync | Inspect diff before syncing; confirm chart version and CRD ownership; do not force-delete production CRDs |
 
 ## Teardown
