@@ -15,14 +15,27 @@ without AWS credentials. Plans and applies remain explicit operator actions.
 ```bash
 cd infra/terraform/bootstrap
 cp terraform.tfvars.example terraform.tfvars
-terraform init
+terraform init -backend=false
 terraform plan -out=bootstrap.tfplan
 terraform apply bootstrap.tfplan
 ```
 
-The bucket name must be globally unique. Save the outputs before configuring the
-environment backend. The backend uses native S3 lock files (`use_lockfile`), so
-no DynamoDB lock table is required.
+The bucket name must be globally unique. Save the outputs, then migrate the
+bootstrap state into the bucket it created:
+
+```bash
+terraform init -migrate-state -force-copy \
+  -backend-config="bucket=<state_bucket_name>" \
+  -backend-config="key=kubevista/bootstrap/terraform.tfstate" \
+  -backend-config="region=us-west-2" \
+  -backend-config="encrypt=true" \
+  -backend-config="kms_key_id=<state_kms_key_arn>" \
+  -backend-config="use_lockfile=true"
+```
+
+The backend uses native S3 lock files (`use_lockfile`), so no DynamoDB lock
+table is required. Configure the environment backend only after this migration
+succeeds.
 
 ## Plan the dev environment
 
