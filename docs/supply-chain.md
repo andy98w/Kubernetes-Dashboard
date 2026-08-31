@@ -18,7 +18,9 @@ Git tag/manual dispatch
   -> reviewed digest promoted through Helm/Argo CD
 ```
 
-No AWS access key is stored in GitHub. The publisher role can request an ECR
+No AWS access key is stored in GitHub. AWS trust matches GitHub's durable owner
+and repository IDs as well as the protected environment, rather than relying
+only on mutable display names. The publisher role can request an ECR
 authorization token and upload layers only to the two application repositories;
 it cannot administer ECR, read Terraform state, or change EKS.
 

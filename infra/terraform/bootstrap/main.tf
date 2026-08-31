@@ -8,10 +8,10 @@ variable "state_bucket_name" {
   type        = string
 }
 
-variable "github_repository" {
-  description = "GitHub owner/repository allowed to publish KubeVista images."
+variable "github_oidc_subject" {
+  description = "Exact durable-ID GitHub OIDC subject allowed to publish KubeVista images."
   type        = string
-  default     = "andy98w/Kubernetes-Dashboard"
+  default     = "repo:andy98w@113266733/Kubernetes-Dashboard@1351972845:environment:kubevista-images"
 }
 
 provider "aws" {
@@ -160,7 +160,7 @@ data "aws_iam_policy_document" "github_images_assume" {
     condition {
       test     = "StringEquals"
       variable = "token.actions.githubusercontent.com:sub"
-      values   = ["repo:${var.github_repository}:environment:kubevista-images"]
+      values   = [var.github_oidc_subject]
     }
   }
 }

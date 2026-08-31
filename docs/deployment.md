@@ -60,7 +60,9 @@ tag. Before running it, create a protected GitHub Environment named
 `kubevista-images` with `AWS_ACCOUNT_ID`, `AWS_REGION`, and
 `AWS_IMAGE_PUBLISHER_ROLE_ARN` environment variables. Copy the role ARN from
 the `github_image_publisher_role_arn` bootstrap output. The role trust policy
-accepts only this repository, this environment, and the STS audience.
+accepts only this repository's durable owner and repository IDs, this
+environment, and the STS audience. Durable IDs prevent a renamed or later
+re-created repository from inheriting the trust relationship.
 
 Each API and web build is pushed as `sha-<full commit>`. ECR rejects tag
 replacement, scans the image on push, expires untagged layers after seven days,

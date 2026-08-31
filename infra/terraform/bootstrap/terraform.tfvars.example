@@ -1,3 +1,3 @@
 aws_region       = "us-west-2"
 state_bucket_name = "replace-with-a-globally-unique-kubevista-state-bucket"
-github_repository  = "andy98w/Kubernetes-Dashboard"
+github_oidc_subject = "repo:andy98w@113266733/Kubernetes-Dashboard@1351972845:environment:kubevista-images"
