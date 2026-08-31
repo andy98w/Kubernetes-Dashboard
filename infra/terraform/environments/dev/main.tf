@@ -158,13 +158,22 @@ resource "aws_budgets_budget" "monthly" {
   }
 
   dynamic "notification" {
-    for_each = var.budget_notification_email == null ? [] : [var.budget_notification_email]
+    for_each = var.budget_notification_email == null ? {} : {
+      actual-50 = {
+        threshold         = 50
+        notification_type = "ACTUAL"
+      }
+      forecasted-80 = {
+        threshold         = 80
+        notification_type = "FORECASTED"
+      }
+    }
     content {
       comparison_operator        = "GREATER_THAN"
-      threshold                  = 80
+      threshold                  = notification.value.threshold
       threshold_type             = "PERCENTAGE"
-      notification_type          = "FORECASTED"
-      subscriber_email_addresses = [notification.value]
+      notification_type          = notification.value.notification_type
+      subscriber_email_addresses = [var.budget_notification_email]
     }
   }
 }
