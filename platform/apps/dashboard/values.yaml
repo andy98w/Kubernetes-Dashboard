@@ -1,12 +1,12 @@
 image:
-  repository: ghcr.io/andy98w/kubevista-api
-  tag: "0.1.0"
-  digest: ""
+  repository: 637246456891.dkr.ecr.us-west-2.amazonaws.com/kubevista-api
+  tag: ""
+  digest: "sha256:cf34c809577890d02661e94e524fd4d2bfe267bc198a2d474e2e4dcc2ddf9c63"
   pullPolicy: IfNotPresent
 webImage:
-  repository: ghcr.io/andy98w/kubevista-web
-  tag: "0.1.0"
-  digest: ""
+  repository: 637246456891.dkr.ecr.us-west-2.amazonaws.com/kubevista-web
+  tag: ""
+  digest: "sha256:aef4ff0177fdc47edbbebecbea70967b883e8a35f30ce51b4790adee10d1a33b"
   pullPolicy: IfNotPresent
 replicas: 2
 webReplicas: 2

@@ -52,3 +52,9 @@ cosign verify \
 ECR lifecycle rules delete untagged images after seven days and retain the
 latest 20 `sha-`/`v` images. ECR basic scanning is a release signal, not a policy
 gate yet; Kyverno digest/signature enforcement is the next control-plane step.
+
+The dashboard chart currently promotes release `86fc9a2` by digest. API digest
+`sha256:cf34c809577890d02661e94e524fd4d2bfe267bc198a2d474e2e4dcc2ddf9c63`
+and web digest
+`sha256:aef4ff0177fdc47edbbebecbea70967b883e8a35f30ce51b4790adee10d1a33b`
+were independently confirmed in ECR with active Sigstore bundle referrers.
