@@ -112,6 +112,10 @@ module "eks" {
       instance_types = var.node_instance_types
       capacity_type  = "ON_DEMAND"
 
+      # VPC CNI receives its AWS permissions through EKS Pod Identity.
+      # Keep those permissions off the broader EC2 node role.
+      iam_role_attach_cni_policy = false
+
       min_size     = 2
       max_size     = 4
       desired_size = 2
