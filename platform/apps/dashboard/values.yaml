@@ -1,0 +1,16 @@
+image:
+  repository: ghcr.io/andy98w/kubevista-api
+  tag: "0.1.0"
+  pullPolicy: IfNotPresent
+replicas: 2
+resources:
+  requests: { cpu: 100m, memory: 128Mi }
+  limits: { cpu: 500m, memory: 256Mi }
+autoscaling:
+  minReplicas: 2
+  maxReplicas: 6
+  cpuTarget: 70
+networkPolicy:
+  # Kubernetes NetworkPolicy cannot select the managed EKS control plane by
+  # namespace. Restrict this to the cluster endpoint CIDR in each environment.
+  apiServerCidr: 0.0.0.0/0

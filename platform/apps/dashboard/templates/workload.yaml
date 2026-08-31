@@ -1,0 +1,107 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: kubevista
+  labels: { app.kubernetes.io/name: kubevista }
+automountServiceAccountToken: true
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: kubevista-reader
+rules:
+  - apiGroups: [""]
+    resources: ["nodes", "namespaces", "pods", "pods/log", "events", "services"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["apps"]
+    resources: ["deployments", "daemonsets", "statefulsets", "replicasets"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["batch"]
+    resources: ["jobs", "cronjobs"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: kubevista-reader
+roleRef: { apiGroup: rbac.authorization.k8s.io, kind: ClusterRole, name: kubevista-reader }
+subjects: [{ kind: ServiceAccount, name: kubevista, namespace: "{{ .Release.Namespace }}" }]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kubevista-api
+  labels: { app.kubernetes.io/name: kubevista }
+spec:
+  replicas: {{ .Values.replicas }}
+  strategy: { type: RollingUpdate, rollingUpdate: { maxUnavailable: 0, maxSurge: 1 } }
+  selector: { matchLabels: { app.kubernetes.io/name: kubevista } }
+  template:
+    metadata:
+      labels: { app.kubernetes.io/name: kubevista }
+      annotations: { prometheus.io/scrape: "true", prometheus.io/port: "8080" }
+    spec:
+      serviceAccountName: kubevista
+      securityContext: { runAsNonRoot: true, seccompProfile: { type: RuntimeDefault } }
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: DoNotSchedule
+          labelSelector: { matchLabels: { app.kubernetes.io/name: kubevista } }
+      containers:
+        - name: api
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports: [{ name: http, containerPort: 8080 }]
+          env:
+            - { name: KUBEVISTA_ENVIRONMENT, value: production }
+            - { name: KUBEVISTA_VERSION, value: "{{ .Chart.AppVersion }}" }
+          readinessProbe: { httpGet: { path: /readyz, port: http }, periodSeconds: 5 }
+          livenessProbe: { httpGet: { path: /healthz, port: http }, initialDelaySeconds: 10 }
+          resources: {{ toYaml .Values.resources | nindent 12 }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities: { drop: ["ALL"] }
+            readOnlyRootFilesystem: true
+---
+apiVersion: v1
+kind: Service
+metadata: { name: kubevista-api, labels: { app.kubernetes.io/name: kubevista } }
+spec:
+  selector: { app.kubernetes.io/name: kubevista }
+  ports: [{ name: http, port: 80, targetPort: http }]
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata: { name: kubevista-api }
+spec:
+  minAvailable: 1
+  selector: { matchLabels: { app.kubernetes.io/name: kubevista } }
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata: { name: kubevista-api }
+spec:
+  scaleTargetRef: { apiVersion: apps/v1, kind: Deployment, name: kubevista-api }
+  minReplicas: {{ .Values.autoscaling.minReplicas }}
+  maxReplicas: {{ .Values.autoscaling.maxReplicas }}
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target: { type: Utilization, averageUtilization: {{ .Values.autoscaling.cpuTarget }} }
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: { name: kubevista-api }
+spec:
+  podSelector: { matchLabels: { app.kubernetes.io/name: kubevista } }
+  policyTypes: [Ingress, Egress]
+  ingress:
+    - from: [{ namespaceSelector: { matchLabels: { kubernetes.io/metadata.name: ingress-system } } }]
+      ports: [{ protocol: TCP, port: 8080 }]
+  egress:
+    - to: [{ namespaceSelector: { matchLabels: { kubernetes.io/metadata.name: kube-system } } }]
+      ports: [{ protocol: UDP, port: 53 }, { protocol: TCP, port: 53 }]
+    - to: [{ ipBlock: { cidr: {{ .Values.networkPolicy.apiServerCidr | quote }} } }]
+      ports: [{ protocol: TCP, port: 443 }]

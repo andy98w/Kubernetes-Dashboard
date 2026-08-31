@@ -1,0 +1,12 @@
+.DS_Store
+.env
+.terraform/
+*.tfstate*
+*.tfplan
+node_modules/
+dist/
+*.tsbuildinfo
+coverage/
+bin/
+work/
+outputs/
