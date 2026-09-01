@@ -13,6 +13,7 @@ mkdir -p "${HELM_CONFIG_HOME}" "${HELM_CACHE_HOME}" "${HELM_DATA_HOME}"
 helm repo add eks https://aws.github.io/eks-charts --force-update >/dev/null
 helm repo add external-secrets https://charts.external-secrets.io --force-update >/dev/null
 helm repo add metrics-server https://kubernetes-sigs.github.io/metrics-server/ --force-update >/dev/null
+helm repo add external-dns https://kubernetes-sigs.github.io/external-dns/ --force-update >/dev/null
 helm repo add prometheus-community https://prometheus-community.github.io/helm-charts --force-update >/dev/null
 helm repo add grafana-community https://grafana-community.github.io/helm-charts --force-update >/dev/null
 helm repo add open-telemetry https://open-telemetry.github.io/opentelemetry-helm-charts --force-update >/dev/null
@@ -41,6 +42,7 @@ helm lint "${repository_root}/platform/apps/platform-config"
 render 10-aws-load-balancer-controller aws-load-balancer-controller eks/aws-load-balancer-controller 3.5.0 kube-system
 render 11-external-secrets external-secrets external-secrets/external-secrets 2.10.0 external-secrets
 render 12-metrics-server metrics-server metrics-server/metrics-server 3.14.0 kube-system
+render 13-external-dns external-dns external-dns/external-dns 1.21.1 external-dns
 render 30-loki loki grafana-community/loki 18.11.7 observability
 render 31-tempo tempo grafana-community/tempo 2.3.0 observability
 render 32-monitoring monitoring prometheus-community/kube-prometheus-stack 88.6.1 observability

@@ -92,6 +92,27 @@ Expected results: the cluster is `ACTIVE`; two nodes are `Ready`; all Argo CD
 applications are `Synced` and `Healthy`; gp3 is the default StorageClass; and
 the KubeVista Helm test succeeds.
 
+## Verify public delivery
+
+```bash
+dig NS kubevista.illuma.me
+aws acm describe-certificate --certificate-arn <arn> \
+  --query 'Certificate.Status'
+kubectl get ingress -n kubevista kubevista-web
+kubectl logs -n external-dns deployment/external-dns --tail=100
+curl -I http://kubevista.illuma.me
+curl -Ik https://kubevista.illuma.me
+```
+
+Expected results: delegation returns the Route53 name servers, ACM is `ISSUED`,
+the Ingress has an ALB hostname, ExternalDNS reports an upsert for the A/AAAA
+alias and TXT ownership record, HTTP redirects to HTTPS, and an unauthenticated
+HTTPS request redirects to the Cognito hosted UI.
+
+The first administrator signs in with the temporary Cognito credential sent by
+email, chooses a permanent password, and enrolls a software TOTP authenticator.
+Never record that credential or TOTP seed in Git, screenshots, or logs.
+
 ## Access dashboards safely
 
 Keep admin interfaces private. Use port forwarding for a demo:

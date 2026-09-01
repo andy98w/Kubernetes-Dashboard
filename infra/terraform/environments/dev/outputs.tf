@@ -69,10 +69,24 @@ output "iam_role_arns" {
     ebs_csi                      = module.ebs_csi_pod_identity.iam_role_arn
     aws_load_balancer_controller = module.aws_load_balancer_controller_pod_identity.iam_role_arn
     external_secrets             = module.external_secrets_pod_identity.iam_role_arn
+    external_dns                 = try(module.external_dns_pod_identity[0].iam_role_arn, null)
   }
 }
 
 output "account_id" {
   description = "AWS account receiving the resources."
   value       = data.aws_caller_identity.current.account_id
+}
+
+output "public_delivery" {
+  description = "Public DNS, certificate, and Cognito values used by the dashboard ingress."
+  value = var.public_zone_name == null ? null : {
+    hostname                    = var.public_zone_name
+    hosted_zone_id              = aws_route53_zone.public[0].zone_id
+    delegated_name_servers      = aws_route53_zone.public[0].name_servers
+    certificate_arn             = aws_acm_certificate.public[0].arn
+    cognito_user_pool_arn       = aws_cognito_user_pool.public[0].arn
+    cognito_user_pool_client_id = aws_cognito_user_pool_client.public[0].id
+    cognito_user_pool_domain    = aws_cognito_user_pool_domain.public[0].domain
+  }
 }

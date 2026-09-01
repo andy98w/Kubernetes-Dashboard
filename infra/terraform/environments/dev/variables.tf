@@ -90,6 +90,31 @@ variable "external_secret_prefix" {
   }
 }
 
+variable "public_zone_name" {
+  description = "Optional delegated Route53 zone and public KubeVista hostname, for example kubevista.example.com."
+  type        = string
+  default     = null
+  nullable    = true
+
+  validation {
+    condition     = var.public_zone_name == null || can(regex("^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)+$", var.public_zone_name))
+    error_message = "public_zone_name must be null or a lowercase fully qualified DNS name without a trailing dot."
+  }
+}
+
+variable "public_admin_email" {
+  description = "Optional initial Cognito administrator email for the public dashboard."
+  type        = string
+  default     = null
+  nullable    = true
+  sensitive   = true
+
+  validation {
+    condition     = var.public_admin_email == null || can(regex("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$", var.public_admin_email))
+    error_message = "public_admin_email must be null or a valid email address."
+  }
+}
+
 variable "expires_at" {
   description = "Optional RFC3339 teardown deadline added to AWS resource tags for ephemeral deployments."
   type        = string

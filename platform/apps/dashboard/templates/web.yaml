@@ -87,8 +87,10 @@ spec:
     - from: [{ podSelector: { matchLabels: { app.kubernetes.io/component: smoke-test } } }]
       ports: [{ protocol: TCP, port: 8080 }]
     {{- if .Values.ingress.enabled }}
-    - from: [{ ipBlock: { cidr: {{ .Values.networkPolicy.loadBalancerSourceCidr | quote }} } }]
+    {{- range .Values.networkPolicy.loadBalancerSourceCidrs }}
+    - from: [{ ipBlock: { cidr: {{ . | quote }} } }]
       ports: [{ protocol: TCP, port: 8080 }]
+    {{- end }}
     {{- end }}
   egress:
     - to: [{ podSelector: { matchLabels: { app.kubernetes.io/name: kubevista, app.kubernetes.io/component: api } } }]

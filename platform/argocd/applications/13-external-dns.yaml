@@ -1,0 +1,40 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: external-dns
+  namespace: argocd
+  annotations: { argocd.argoproj.io/sync-wave: "0" }
+spec:
+  project: kubevista
+  source:
+    repoURL: https://kubernetes-sigs.github.io/external-dns/
+    chart: external-dns
+    targetRevision: 1.21.1
+    helm:
+      releaseName: external-dns
+      values: |
+        provider: { name: aws }
+        sources: [ingress]
+        policy: upsert-only
+        registry: txt
+        txtOwnerId: kubevista-dev
+        domainFilters: [kubevista.illuma.me]
+        serviceAccount:
+          create: true
+          name: external-dns
+        deploymentStrategy: { type: Recreate }
+        resources:
+          requests: { cpu: 25m, memory: 64Mi }
+          limits: { cpu: 200m, memory: 128Mi }
+        serviceMonitor:
+          enabled: true
+          additionalLabels: { release: monitoring }
+        logFormat: json
+        extraArgs:
+          - --aws-zone-type=public
+          - --zone-id-filter=Z103416118YCRBNHTV20Z
+  destination: { server: https://kubernetes.default.svc, namespace: external-dns }
+  syncPolicy:
+    automated: { prune: true, selfHeal: true }
+    syncOptions: [CreateNamespace=true, ServerSideApply=true]
+    retry: { limit: 5 }

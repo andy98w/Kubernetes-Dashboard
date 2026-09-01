@@ -10,7 +10,7 @@ a reason to exist, a documented trade-off, and an automated verification path.
 - A React/TypeScript dashboard for workload and cluster health
 - Terraform-managed three-tier VPC and Amazon EKS infrastructure
 - GitOps delivery with Argo CD and Helm
-- AWS VPC CNI, EBS CSI, EKS Pod Identity, External Secrets, and AWS Load Balancer Controller
+- AWS VPC CNI, EBS CSI, EKS Pod Identity, External Secrets, ExternalDNS, and AWS Load Balancer Controller
 - Prometheus, Grafana, Loki, Tempo, and OpenTelemetry metrics, logs, and traces
 - CI checks, autoscaling, disruption budgets, probes, and graceful shutdown
 - Immutable ECR images with SBOM/provenance attestations and keyless Cosign signatures
@@ -52,6 +52,8 @@ The frontend deliberately avoids a generic component-library look. Its visual
 and data-integrity rules are documented in [docs/frontend.md](docs/frontend.md),
 and the container trust path is documented in
 [docs/supply-chain.md](docs/supply-chain.md).
+Authenticated HTTPS delivery and delegated DNS are documented in
+[docs/public-delivery.md](docs/public-delivery.md).
 
 ## Local development
 
@@ -90,6 +92,7 @@ end-to-end deployment is recorded in
 - [x] Deployable web tier and signed ECR image supply chain
 - [ ] Cilium/Hubble advanced networking profile
 - [ ] Kyverno signature enforcement and runtime security profile
-- [ ] Load, failure, recovery, and security evidence in `docs/evidence/`
+- [x] Load, failure, recovery, and security evidence in `docs/evidence/`
+- [x] Cognito-authenticated HTTPS ingress and GitOps-managed Route53 DNS
 
 See [docs/architecture.md](docs/architecture.md) for scope and engineering decisions.

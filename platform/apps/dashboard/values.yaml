@@ -29,15 +29,33 @@ telemetry:
   otlpEndpoint: http://otel-gateway-opentelemetry-collector.observability.svc.cluster.local:4317
   traceSampleRatio: "0.25"
 ingress:
-  enabled: false
+  enabled: true
   className: alb
-  host: ""
+  host: kubevista.illuma.me
   annotations:
-    alb.ingress.kubernetes.io/scheme: internal
+    alb.ingress.kubernetes.io/load-balancer-name: kubevista-dev
+    alb.ingress.kubernetes.io/scheme: internet-facing
     alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/subnets: subnet-09f2d20bb6eed47cb,subnet-0d7aeef4f44331839,subnet-094eadbb86c77c4a4
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP":80},{"HTTPS":443}]'
+    alb.ingress.kubernetes.io/ssl-redirect: "443"
+    alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:us-west-2:637246456891:certificate/f6c75dec-f66e-4cf5-b74e-e374b018907f
+    alb.ingress.kubernetes.io/ssl-policy: ELBSecurityPolicy-TLS13-1-2-2021-06
     alb.ingress.kubernetes.io/healthcheck-path: /healthz
+    alb.ingress.kubernetes.io/success-codes: "200"
+    alb.ingress.kubernetes.io/auth-type: cognito
+    alb.ingress.kubernetes.io/auth-idp-cognito: '{"userPoolARN":"arn:aws:cognito-idp:us-west-2:637246456891:userpool/us-west-2_beXIg31Ry","userPoolClientID":"4clvblggrmh0hntf1q405ns73i","userPoolDomain":"kubevista-dev-637246456891"}'
+    alb.ingress.kubernetes.io/auth-on-unauthenticated-request: authenticate
+    alb.ingress.kubernetes.io/auth-session-timeout: "3600"
+    alb.ingress.kubernetes.io/load-balancer-attributes: routing.http.drop_invalid_header_fields.enabled=true
+    alb.ingress.kubernetes.io/target-group-attributes: deregistration_delay.timeout_seconds=30
+    alb.ingress.kubernetes.io/tags: Project=KubeVista,Environment=dev,ExpiresAt=2026-09-01T05:30:53Z
+    external-dns.alpha.kubernetes.io/hostname: kubevista.illuma.me
 networkPolicy:
   # The API client uses the kubernetes.default Service ClusterIP. Keep this to
   # the exact Service IP (or the smallest practical service CIDR), not the VPC.
   apiServerCidr: 172.20.0.1/32
-  loadBalancerSourceCidr: 10.42.0.0/16
+  loadBalancerSourceCidrs:
+    - 10.42.64.0/20
+    - 10.42.80.0/20
+    - 10.42.96.0/20
