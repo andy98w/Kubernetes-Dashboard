@@ -1,12 +1,12 @@
 image:
   repository: 637246456891.dkr.ecr.us-west-2.amazonaws.com/kubevista-api
   tag: ""
-  digest: "sha256:48ea1ad5226c5ab8dc58a5315f09fe3ad239f6a84f95148b6386938c388392a3"
+  digest: "sha256:5382dd6417b0bdcee3adbadfe6a548c81327bf028eeef2bed4e444e8290fb90c"
   pullPolicy: IfNotPresent
 webImage:
   repository: 637246456891.dkr.ecr.us-west-2.amazonaws.com/kubevista-web
   tag: ""
-  digest: "sha256:652dc97e6488879b33811fdbe045027e8b380109acd0e077f60da765df580f63"
+  digest: "sha256:add0e4d4a0981658f5d5eb87037c4489b1c5e43c2b478aacb919eb8319927a72"
   pullPolicy: IfNotPresent
 replicas: 2
 webReplicas: 2
