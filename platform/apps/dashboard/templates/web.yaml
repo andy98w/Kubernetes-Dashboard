@@ -38,10 +38,15 @@ spec:
           readinessProbe: { httpGet: { path: /healthz, port: http }, periodSeconds: 5 }
           livenessProbe: { httpGet: { path: /, port: http }, initialDelaySeconds: 10 }
           resources: {{ toYaml .Values.webResources | nindent 12 }}
+          volumeMounts:
+            - { name: nginx-tmp, mountPath: /tmp }
           securityContext:
             allowPrivilegeEscalation: false
             capabilities: { drop: ["ALL"] }
             readOnlyRootFilesystem: true
+      volumes:
+        - name: nginx-tmp
+          emptyDir: { medium: Memory, sizeLimit: 32Mi }
 ---
 apiVersion: v1
 kind: Service
