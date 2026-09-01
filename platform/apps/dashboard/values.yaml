@@ -37,7 +37,7 @@ ingress:
     alb.ingress.kubernetes.io/target-type: ip
     alb.ingress.kubernetes.io/healthcheck-path: /healthz
 networkPolicy:
-  # Kubernetes NetworkPolicy cannot select the managed EKS control plane by
-  # namespace. Restrict this to the cluster endpoint CIDR in each environment.
-  apiServerCidr: 10.42.0.0/16
+  # The API client uses the kubernetes.default Service ClusterIP. Keep this to
+  # the exact Service IP (or the smallest practical service CIDR), not the VPC.
+  apiServerCidr: 172.20.0.1/32
   loadBalancerSourceCidr: 10.42.0.0/16

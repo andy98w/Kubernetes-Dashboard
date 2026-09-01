@@ -22,8 +22,11 @@ explainable engineering over a long list of logos.
   through External Secrets, Kyverno admission policy, Trivy, read-only RBAC,
   default-deny network policy, Pod Security Standards.
 
-The dashboard chart defaults `networkPolicy.apiServerCidr` to the dev VPC CIDR;
-each additional environment must replace it with its own private endpoint CIDR.
+The dashboard chart defaults `networkPolicy.apiServerCidr` to the exact
+`kubernetes.default` Service ClusterIP used by the dev cluster. Each additional
+environment must replace it with its own API Service IP (or the smallest
+practical service CIDR); the managed control-plane VPC endpoint is not the
+destination seen by in-cluster clients.
 
 The observability deployment is intentionally sized for a portfolio cluster:
 Prometheus, Loki, and Tempo retain data on encrypted gp3 volumes, but Loki and

@@ -86,6 +86,9 @@ module "eks" {
     vpc-cni = {
       before_compute = true
       most_recent    = true
+      configuration_values = jsonencode({
+        enableNetworkPolicy = "true"
+      })
       pod_identity_association = [{
         role_arn        = module.vpc_cni_pod_identity.iam_role_arn
         service_account = "aws-node"
