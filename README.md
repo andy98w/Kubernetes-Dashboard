@@ -71,7 +71,9 @@ cluster while developing the UI.
 
 Start with [docs/deployment.md](docs/deployment.md). A continuously running EKS
 environment costs real money; use the documented teardown workflow when the
-demo is not needed. Never commit Terraform state or AWS credentials.
+demo is not needed. Never commit Terraform state or AWS credentials. The first
+end-to-end deployment is recorded in
+[docs/evidence/live-eks-2026-08-31.md](docs/evidence/live-eks-2026-08-31.md).
 
 ## Roadmap
 
