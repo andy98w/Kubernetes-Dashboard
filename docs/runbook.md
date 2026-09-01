@@ -140,8 +140,27 @@ the terminal; do not paste them into tickets, chat, screenshots, or commits.
 
 ## Teardown
 
-Delete Kubernetes load balancers and verify AWS target groups/load balancers are
-gone before destroying the VPC. Then use a reviewed destroy plan:
+Treat teardown as an ordered controller and ownership workflow, not just a
+Terraform command. Kubernetes controllers can recreate resources while they
+are running, and dynamically provisioned resources may not exist in Terraform
+state.
+
+First stop Argo CD reconciliation, delete the public Ingress, and wait until the
+AWS Load Balancer Controller has removed the ALB and target groups:
+
+```bash
+kubectl scale statefulset argocd-application-controller \
+  --namespace argocd --replicas=0
+kubectl delete ingress kubevista-web --namespace kubevista
+aws elbv2 describe-load-balancers \
+  --query 'LoadBalancers[?contains(LoadBalancerName, `kubevista`)].LoadBalancerArn'
+```
+
+Do not proceed while the final command returns a KubeVista load balancer. If
+the cluster is already unavailable, inspect and remove controller-owned load
+balancer resources explicitly before attempting VPC deletion.
+
+Then create, inspect, and apply a saved destroy plan:
 
 ```bash
 terraform -chdir=infra/terraform/environments/dev plan -destroy -out=destroy.tfplan
@@ -159,6 +178,53 @@ scripts/terraform-ephemeral.sh destroy
 The state bucket is intentionally retained. Confirm EBS volumes, load balancers,
 NAT gateways, and CloudWatch log groups according to the chosen retention policy
 so no unexpected recurring charges remain.
+
+Run the repository verifier after Terraform completes:
+
+```bash
+AWS_PROFILE=kubevista AWS_REGION=us-west-2 \
+  scripts/verify-aws-cleanup.sh
+terraform -chdir=infra/terraform/environments/dev state list
+```
+
+The second command must print no resources. The verifier uses live EC2 and ELB
+APIs; do not treat results from the eventually consistent Resource Groups
+Tagging API alone as proof that a resource still exists.
+
+### Controller-owned Route 53 records
+
+ExternalDNS-created A, AAAA, and TXT records are not Terraform resources. If
+Route 53 returns `HostedZoneNotEmpty`, list the record sets, distinguish the
+required NS/SOA records from controller-owned application records, and delete
+only the inspected application records. Rerun a saved destroy plan and verify
+that it contains only the hosted zone before applying it. Do not enable broad
+zone deletion merely to suppress the ownership check.
+
+After the hosted zone is deleted, remove the corresponding subdomain NS
+delegation from the parent DNS provider. A newly created Route 53 zone will have
+a new nameserver set, so keeping or restoring the old values creates a dangling
+delegation.
+
+### Dynamically provisioned EBS volumes
+
+PVC volumes are created by EBS CSI rather than Terraform and can survive the
+cluster depending on reclaim behavior and teardown timing. Inspect them through
+the authoritative EC2 API:
+
+```bash
+aws ec2 describe-volumes \
+  --filters Name=tag:Project,Values=KubeVista \
+  --query 'Volumes[].{id:VolumeId,state:State,size:Size,attachments:Attachments,tags:Tags}'
+```
+
+Delete a volume only after verifying it is `available`, unattached, and tagged
+for the destroyed cluster and expected PVC. Volume deletion is irreversible;
+retain or snapshot data when the environment's retention policy requires it.
+
+The first teardown, including the ExternalDNS ownership issue, orphaned
+observability volumes, SSO recovery, parent-zone cleanup, and zero-resource
+verification, is recorded in
+[`docs/evidence/teardown-2026-08-31.md`](evidence/teardown-2026-08-31.md).
 
 Keep static portfolio sites outside EKS (for example, on static object/CDN
 hosting). The cluster is reserved for demonstrations that benefit from

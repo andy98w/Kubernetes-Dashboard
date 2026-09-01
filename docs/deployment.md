@@ -13,9 +13,10 @@ Budget. Nothing is applied automatically by CI.
    bootstrap stack. The bucket uses versioning, KMS encryption, TLS-only access,
    and native S3 state locking. This stack also creates the two persistent ECR
    repositories and the narrow GitHub image-publisher role.
-3. Copy the bootstrap output into
-   `infra/terraform/environments/dev/backend.tf.example`, save it as
-   `backend.tf`, then copy `terraform.tfvars.example` to `terraform.tfvars`.
+3. Copy `infra/terraform/environments/dev/backend.hcl.example` to the ignored
+   `backend.hcl`, populate it from the bootstrap outputs, then copy
+   `terraform.tfvars.example` to `terraform.tfvars`. Initialize the environment
+   with `terraform init -backend-config=backend.hcl`.
 4. Set `admin_principal_arn` to a role, never an IAM user. Keep the API private
    when using a VPN or VPC runner; for a short portfolio demo, allow only your
    current public `/32` in `public_access_cidrs`.

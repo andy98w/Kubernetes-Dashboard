@@ -25,14 +25,31 @@ else
   echo "PASS: no tagged NAT gateways remain."
 fi
 
-leftover_count="$(aws resourcegroupstaggingapi get-resources \
+volume_count="$(aws ec2 describe-volumes \
   --profile "${aws_profile}" \
   --region "${aws_region}" \
-  --tag-filters Key=Project,Values=KubeVista \
-  --resource-type-filters ec2:volume elasticloadbalancing:loadbalancer \
-  --query 'length(ResourceTagMappingList)' --output text)"
-if [[ "${leftover_count}" != "0" ]]; then
-  echo "FAIL: ${leftover_count} tagged EBS volume or load balancer resource(s) remain."
+  --filters Name=tag:Project,Values=KubeVista \
+  --query 'length(Volumes)' --output text)"
+
+load_balancer_count=0
+while IFS= read -r load_balancer_arn; do
+  [[ -z "${load_balancer_arn}" ]] && continue
+  project_tag_count="$(aws elbv2 describe-tags \
+    --profile "${aws_profile}" \
+    --region "${aws_region}" \
+    --resource-arns "${load_balancer_arn}" \
+    --query 'length(TagDescriptions[0].Tags[?Key == `Project` && Value == `KubeVista`])' \
+    --output text)"
+  if [[ "${project_tag_count}" != "0" ]]; then
+    load_balancer_count=$((load_balancer_count + 1))
+  fi
+done < <(aws elbv2 describe-load-balancers \
+  --profile "${aws_profile}" \
+  --region "${aws_region}" \
+  --query 'LoadBalancers[].LoadBalancerArn' --output text | tr '\t' '\n')
+
+if [[ "${volume_count}" != "0" || "${load_balancer_count}" != "0" ]]; then
+  echo "FAIL: ${volume_count} tagged EBS volume(s) and ${load_balancer_count} tagged load balancer(s) remain."
   failures=$((failures + 1))
 else
   echo "PASS: no tagged EBS volumes or load balancers remain."

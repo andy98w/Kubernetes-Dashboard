@@ -74,7 +74,12 @@ production organization should also use separate AWS accounts, a private CI
 runner, protected plan/apply environments, centralized audit logs, backup and
 restore testing, and workload-specific IAM through EKS Pod Identity.
 
-Destroy the EKS environment after demonstrations to stop most recurring costs:
+Destroy the EKS environment after demonstrations to stop most recurring costs.
+Use the controller-aware sequence and post-destroy checks in
+[`docs/runbook.md`](../../docs/runbook.md); a raw Terraform destroy does not own
+ExternalDNS records or dynamically provisioned PVC volumes.
+
+The underlying saved-plan workflow is:
 
 ```bash
 terraform plan -destroy -out=destroy.tfplan
