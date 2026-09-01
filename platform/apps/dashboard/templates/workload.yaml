@@ -42,7 +42,11 @@ spec:
       annotations: { prometheus.io/scrape: "true", prometheus.io/port: "8080" }
     spec:
       serviceAccountName: kubevista
-      securityContext: { runAsNonRoot: true, seccompProfile: { type: RuntimeDefault } }
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        runAsGroup: 65532
+        seccompProfile: { type: RuntimeDefault }
       topologySpreadConstraints:
         - maxSkew: 1
           topologyKey: kubernetes.io/hostname
