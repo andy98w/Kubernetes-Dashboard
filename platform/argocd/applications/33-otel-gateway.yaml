@@ -19,7 +19,7 @@ spec:
           kubernetesAttributes: { enabled: true }
           kubernetesEvents: { enabled: true }
           clusterMetrics: { enabled: true }
-        image: { repository: otel/opentelemetry-collector-k8s }
+        image: { repository: otel/opentelemetry-collector-contrib }
         alternateConfig:
           extensions:
             health_check: { endpoint: "${env:MY_POD_IP}:13133" }
