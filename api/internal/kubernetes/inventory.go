@@ -38,6 +38,12 @@ type Summary struct {
 type Inventory interface {
 	Ready(context.Context) error
 	Summary(context.Context) (Summary, error)
+	Workloads(context.Context) (Workloads, error)
+	Network(context.Context) (Network, error)
+	Events(context.Context) (Events, error)
+	Observability(context.Context) (Observability, error)
+	Security(context.Context) (Security, error)
+	Cost(context.Context) (Cost, error)
 }
 
 type Client struct {

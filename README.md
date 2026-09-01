@@ -7,7 +7,8 @@ a reason to exist, a documented trade-off, and an automated verification path.
 ## What this demonstrates
 
 - A Go control-plane API using Kubernetes `client-go` and least-privilege RBAC
-- A React/TypeScript dashboard for workload and cluster health
+- A React/TypeScript operations console for workloads, networking, events,
+  observability, security posture, and directional cost analysis
 - Terraform-managed three-tier VPC and Amazon EKS infrastructure
 - GitOps delivery with Argo CD and Helm
 - AWS VPC CNI, EBS CSI, EKS Pod Identity, External Secrets, ExternalDNS, and AWS Load Balancer Controller
@@ -86,8 +87,9 @@ end-to-end deployment is recorded in
 - [x] Terraform VPC/EKS baseline, encrypted remote-state bootstrap, and cost budget
 - [x] Pod Identity-backed AWS integrations and encrypted EBS storage
 - [x] GitOps definitions for Prometheus, Grafana, Loki, Tempo, and OpenTelemetry
-- [ ] Kubernetes event and workload detail APIs
-- [ ] Workload drill-down UI and Hubble flows
+- [x] Kubernetes workload, event, network, observability, security, and cost APIs
+- [x] Live multi-view operations console with filtering and responsive navigation
+- [ ] Workload resource drill-down and Hubble flow visualization
 - [x] GitOps platform add-on bootstrap definitions
 - [x] Deployable web tier and signed ECR image supply chain
 - [ ] Cilium/Hubble advanced networking profile
