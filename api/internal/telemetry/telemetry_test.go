@@ -26,3 +26,17 @@ func TestSampleRatioRejectsInvalidValues(t *testing.T) {
 		t.Fatalf("sampleRatio() = %v, want 0.25", got)
 	}
 }
+
+func TestServiceResourceMergesWithDefaultSchema(t *testing.T) {
+	resource, err := newServiceResource(config.Config{
+		Version:     "test-version",
+		Environment: "test",
+		ClusterName: "test-cluster",
+	})
+	if err != nil {
+		t.Fatalf("newServiceResource() error = %v", err)
+	}
+	if resource.SchemaURL() == "" {
+		t.Fatal("newServiceResource() did not preserve the default resource schema URL")
+	}
+}
