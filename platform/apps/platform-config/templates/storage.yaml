@@ -10,7 +10,7 @@ parameters:
   encrypted: "true"
   tagSpecification_1: "Project=KubeVista"
   tagSpecification_2: "Environment=dev"
-  tagSpecification_3: "CostCenter=portfolio"
+  tagSpecification_3: "CostCenter=kubevista"
 reclaimPolicy: Retain
 allowVolumeExpansion: true
 volumeBindingMode: WaitForFirstConsumer

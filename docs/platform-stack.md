@@ -1,8 +1,7 @@
 # Eight-layer AWS and Kubernetes platform
 
-This document is the implementation inventory for KubeVista. It separates
-resources by dependency order so a reviewer can see what creates each resource,
-why it exists, and which trade-offs are portfolio-specific.
+This page maps the repository into the eight layers I used while building the
+cluster. The order also matches the main dependencies during deployment.
 
 ```text
 1 Network -> 2 IAM -> 3 EKS -> 4 Compute -> 5 Core add-ons
@@ -22,7 +21,7 @@ Terraform root: `infra/terraform/environments/dev`
 | Private subnets | Three `/20` subnets across available AZs | EKS managed nodes and workloads |
 | Intra subnets | Three `/20` subnets across available AZs | EKS control-plane network interfaces |
 | Internet gateway | VPC module-managed | Public-subnet internet route |
-| NAT gateways | One in portfolio mode; one per AZ in production mode | Outbound-only private workload access |
+| NAT gateways | One in this environment; configurable per AZ | Outbound-only private workload access |
 | Route tables | Separate public, private, and intra tiers | Prevent accidental control-plane/public routing overlap |
 | Security groups | Separate EKS cluster and node groups | Control plane/node traffic with module-maintained EKS rules |
 | VPC Flow Logs | CloudWatch, 60-second aggregation, 30-day retention | Network audit and troubleshooting evidence |
@@ -74,9 +73,9 @@ unavailable. Workloads use topology spread constraints, disruption budgets,
 requests/limits, health probes, non-root users, read-only filesystems, and
 dropped Linux capabilities.
 
-Managed nodes are intentionally the first compute profile. Karpenter is useful
-after workload shape, interruption tolerance, and scaling SLOs are measured; it
-is not added merely to increase the tool count.
+I used an EKS managed node group for the first version. Karpenter would make
+more sense after collecting enough workload and interruption data to tune its
+NodePools.
 
 ## 5. Core Kubernetes add-ons and CNI
 
@@ -90,9 +89,9 @@ EKS manages lifecycle and compatibility for:
 
 AWS VPC CNI is the baseline CNI because pods receive VPC-routable addresses and
 AWS supports its lifecycle on EKS. Kubernetes NetworkPolicy restricts KubeVista.
-Cilium/Hubble is a documented future profile: it should be introduced only with
-an explicit choice between VPC CNI chaining/policy mode and full CNI replacement,
-plus connectivity, upgrade, and rollback tests.
+Cilium/Hubble is not installed. Adding it would require choosing between VPC
+CNI chaining and full CNI replacement, then testing connectivity, upgrades, and
+rollback as a separate profile.
 
 The `gp3` StorageClass uses encrypted EBS volumes, waits for pod scheduling
 before provisioning in an AZ, permits expansion, and retains volumes after PVC
@@ -115,8 +114,8 @@ server-side apply handles large CRDs. Exact chart versions are pinned:
 | OpenTelemetry Collector | `0.172.0` | `observability` |
 
 The Load Balancer Controller finds the VPC by its Terraform tag, so it does not
-need pod access to node metadata. External Secrets uses controller Pod Identity;
-its ClusterSecretStore deliberately has no `auth` block. The example
+need pod access to node metadata. External Secrets uses controller Pod Identity,
+so its ClusterSecretStore has no `auth` block. The example
 `platform/examples/external-secret.yaml` reads `kubevista/example` only after an
 operator creates that AWS secret.
 
@@ -129,8 +128,8 @@ Public exposure requires a separate authentication and threat-model decision.
 
 ## 7. Applications and testing
 
-KubeVista is a Go `client-go` application, not a static mock. In cluster mode it
-uses its service-account token and read-only ClusterRole to count nodes,
+In cluster mode, the Go API uses its service-account token and read-only
+ClusterRole to count nodes,
 namespaces, and pod phases. It joins workload controllers to their Pods, images,
 Services, NetworkPolicies, and Events without mutation. A server-sent event
 endpoint forwards Pod watch notifications so the React client can refresh the
@@ -166,12 +165,12 @@ exports, and samples 25 percent by default. When no OTLP endpoint is configured,
 telemetry is a no-op so local development remains dependency-free. `/metrics`
 exposes Go runtime and process metrics for the ServiceMonitor.
 
-The portfolio profile keeps seven days/20 GiB of Prometheus data, seven days/20
+The deployed profile keeps seven days/20 GiB of Prometheus data, seven days/20
 GiB of Loki data, and 24 hours/10 GiB of Tempo data. Grafana uses a 5 GiB volume,
-and Alertmanager uses 5 GiB. Loki and Tempo are single replicas. A production
-profile must move logs/traces to versioned object storage, add multi-AZ replicas,
-configure Alertmanager receivers, use SSO for Grafana, and test restore and
-retention enforcement.
+and Alertmanager uses 5 GiB. Loki and Tempo are single replicas. Before running
+this long term, I would move logs and traces to versioned object storage, spread
+replicas across AZs, configure real Alertmanager receivers, use SSO for Grafana,
+and test restores.
 
 ## Security and cost boundaries
 
@@ -185,7 +184,7 @@ retention enforcement.
   `single_nat_gateway = false` for the production profile.
 - EKS, NAT gateways, nodes, load balancers, EBS volumes, and CloudWatch ingestion
   all cost money. The Terraform budget is an alert, not a hard spending cap.
-- Destroy the EKS environment after demonstrations; preserve remote state.
+- Remove the EKS environment after a test run; preserve remote state.
 
 ## Source-of-truth ownership
 

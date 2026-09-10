@@ -60,4 +60,4 @@ if (( failures > 0 )); then
   exit 1
 fi
 
-echo "Cleanup verification passed. The Terraform state bucket and its KMS key are intentionally retained."
+echo "Cleanup verification passed. The Terraform state bucket and its KMS key are retained by design."

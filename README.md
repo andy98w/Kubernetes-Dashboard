@@ -1,87 +1,90 @@
 # KubeVista
 
-KubeVista is a production-minded Kubernetes operations dashboard and AWS EKS
-reference platform. It is designed as a portfolio project: every component has
-a reason to exist, a documented trade-off, and an automated verification path.
+KubeVista is a read-only Kubernetes dashboard backed by a Go API. I built it to
+work through the parts of running EKS that are easy to miss in a small demo:
+networking, IAM, GitOps, telemetry, image provenance, failure testing, and
+cleanup.
 
-## What this demonstrates
+I deployed the full stack to AWS on August 31, 2026, ran the tests documented in
+this repository, took it down, and kept the cheaper state and image artifacts.
+The public demo uses representative data from that run and clearly labels the
+cluster as offline.
 
-- A Go control-plane API using Kubernetes `client-go` and least-privilege RBAC
-- A React/TypeScript operations console for workloads, networking, events,
-  observability, security posture, and directional cost analysis
-- Terraform-managed three-tier VPC and Amazon EKS infrastructure
-- GitOps delivery with Argo CD and Helm
-- AWS VPC CNI, EBS CSI, EKS Pod Identity, External Secrets, ExternalDNS, and AWS Load Balancer Controller
-- Prometheus, Grafana, Loki, Tempo, and OpenTelemetry metrics, logs, and traces
-- CI checks, autoscaling, disruption budgets, probes, and graceful shutdown
-- Immutable ECR images with SBOM/provenance attestations and keyless Cosign signatures
+## What is in the repository
 
-## Verified outcomes
+- Go API using Kubernetes `client-go` and get/list/watch-only RBAC
+- React and TypeScript dashboard for workloads, networking, events, incidents,
+  security checks, telemetry components, and estimated cost
+- Terraform for a three-tier VPC, EKS, IAM, encryption, logging, and budgets
+- Helm and Argo CD definitions for the application and platform add-ons
+- Prometheus, Grafana, Loki, Tempo, and OpenTelemetry configuration
+- GitHub Actions image builds using OIDC, ECR digests, SBOM/provenance
+  attestations, scanning, and Cosign signing
+- Smoke, access-control, load, disruption, and teardown checks
 
-These are measurements from the recorded live deployment, not projected claims:
+## Results from the AWS run
 
-| Validation | Result |
+| Test | Result |
 | --- | --- |
-| Baseline API load | `744/744` HTTP 200 at 25 requests/second; `0.842 ms` average, ~`4.85 ms` p99 |
-| API pod replacement | Ready in 2 seconds; `896/896` HTTP 200 during disruption, ~`2.78 ms` p99 |
-| Web pod replacement | Ready in 2 seconds; `896/896` HTTP 200 during disruption, ~`8.51 ms` p99 |
-| GitOps convergence | 12 Argo CD applications `Synced` and `Healthy` |
-| Network isolation | Authorized smoke workload succeeded; untrusted workload was blocked from both tiers |
-| Teardown | EKS, VPC, NAT, ALB, Route53 delegation, Cognito, KMS, logs, and storage verified absent |
+| API load test | `744/744` HTTP 200 at 25 requests/second; `0.842 ms` average and about `4.85 ms` p99 |
+| API pod replacement | Replacement Ready in 2 seconds; `896/896` HTTP 200 and about `2.78 ms` p99 |
+| Web pod replacement | Replacement Ready in 2 seconds; `896/896` HTTP 200 and about `8.51 ms` p99 |
+| Argo CD | 12 applications reported `Synced` and `Healthy` |
+| NetworkPolicy | The smoke-test workload connected; an untrusted workload could not reach either application tier |
+| Cleanup | Direct AWS API checks found no remaining EKS, VPC, NAT, ALB, Cognito, log, or EBS resources from the environment |
 
-See the [evidence index](docs/evidence/README.md) for the claim-to-proof map.
+The [test records](docs/evidence/README.md) link each result to the longer run
+notes.
 
 ## Architecture
 
 ```mermaid
 flowchart LR
-    User[Authenticated browser] -->|HTTPS + Cognito| ALB[AWS ALB]
-    ALB --> Web[React + NGINX web tier]
-    Web --> API[Go client-go API]
+    User[Browser] -->|HTTPS + Cognito| ALB[AWS ALB]
+    ALB --> Web[React + NGINX]
+    Web --> API[Go API]
     API -->|read-only RBAC| K8s[Kubernetes API]
-    API -->|OTLP traces| OTel[OpenTelemetry gateway]
+    API -->|OTLP| OTel[OpenTelemetry]
     OTel --> Tempo[Tempo]
     Prom[Prometheus] --> Grafana[Grafana]
     Loki[Loki] --> Grafana
     Tempo --> Grafana
-    GHA[GitHub Actions + OIDC] --> ECR[ECR signed images]
+    GHA[GitHub Actions + OIDC] --> ECR[ECR]
     ECR --> Argo[Argo CD + Helm]
     Argo --> EKS[EKS workloads]
     Terraform[Terraform] --> EKS
 ```
 
-The EKS nodes, observability storage, and application workloads run in private
-subnets across Availability Zones. Only the authenticated ALB is public;
-Grafana and Argo CD remain private administrative surfaces.
+Worker nodes, application pods, and observability storage ran in private
+subnets across three Availability Zones. The application ALB was public and
+used Cognito authentication. Grafana and Argo CD stayed private.
 
-The dashboard is intentionally **read-only by default**. Mutating cluster tools
-look impressive in demos but create an unnecessarily dangerous security model.
+The API cannot create, update, delete, exec into pods, or read Secrets. Its
+ClusterRole is limited to the resources displayed by the dashboard.
 
 ## Repository layout
 
-| Path | Purpose |
+| Path | Contents |
 | --- | --- |
-| `api/` | Go API and Kubernetes adapter |
-| `web/` | React/TypeScript UI |
-| `infra/terraform/` | AWS network, EKS, IAM, and add-ons |
-| `platform/` | Argo CD and Helm definitions |
-| `docs/` | Architecture decisions, runbooks, and threat model |
+| `api/` | Go HTTP server and Kubernetes client |
+| `web/` | React dashboard and Playwright tests |
+| `infra/terraform/` | AWS bootstrap and EKS environment |
+| `platform/` | Helm charts and Argo CD applications |
+| `docs/` | Design notes, runbooks, and deployment records |
 
-The complete eight-layer inventory is in
-[docs/platform-stack.md](docs/platform-stack.md), and operational commands are
-in [docs/runbook.md](docs/runbook.md). Upstream design sources are collected in
-[docs/references.md](docs/references.md).
+Useful starting points:
 
-The frontend deliberately avoids a generic component-library look. Its visual
-and data-integrity rules are documented in [docs/frontend.md](docs/frontend.md),
-and the container trust path is documented in
-[docs/supply-chain.md](docs/supply-chain.md).
-Authenticated HTTPS delivery and delegated DNS are documented in
-[docs/public-delivery.md](docs/public-delivery.md).
+- [AWS and Kubernetes stack](docs/platform-stack.md)
+- [Deployment guide](docs/deployment.md)
+- [Operations and teardown runbook](docs/runbook.md)
+- [Container supply chain](docs/supply-chain.md)
+- [August 31 deployment record](docs/evidence/live-eks-2026-08-31.md)
+- [August 31 teardown record](docs/evidence/teardown-2026-08-31.md)
 
-## Local development
+## Run locally
 
-Prerequisites: Go 1.26+, Node 24+, Docker, kubectl, Helm, and optionally kind.
+Prerequisites are pinned in `.tool-versions`: Go 1.26, Node 24, Terraform,
+kubectl, and Helm.
 
 ```bash
 make test
@@ -89,49 +92,38 @@ make run-api
 make run-web
 ```
 
-The API uses your current kubeconfig outside a cluster and in-cluster service
-account credentials on EKS. Set `KUBEVISTA_DEMO_MODE=true` to run without a
-cluster while developing the UI.
+Outside Kubernetes, the API uses the current kubeconfig. Set
+`KUBEVISTA_DEMO_MODE=true` to run the API with sample data.
 
-To build the permanent, zero-AWS-cost recruiter demo, run:
+The standalone demo build needs no API or AWS resources:
 
 ```bash
 cd web
 npm run build:demo
 ```
 
-That build embeds an explicitly labeled snapshot from the validated EKS run;
-it never presents sample data as a currently running cluster. The root
-`vercel.json` configures this profile for static hosting.
+The root `vercel.json` uses that build and serves `web/dist`.
 
-## AWS deployment
+## Deploy to AWS
 
-Start with [docs/deployment.md](docs/deployment.md). A continuously running EKS
-environment costs real money; use the documented teardown workflow when the
-demo is not needed. Never commit Terraform state or AWS credentials. The first
-end-to-end deployment is recorded in
-[docs/evidence/live-eks-2026-08-31.md](docs/evidence/live-eks-2026-08-31.md),
-and its verified destruction and retained artifacts are recorded in
-[docs/evidence/teardown-2026-08-31.md](docs/evidence/teardown-2026-08-31.md).
+Follow [docs/deployment.md](docs/deployment.md). The workflow requires an AWS
+IAM Identity Center session and a reviewed Terraform plan. EKS, NAT gateways,
+nodes, load balancers, and telemetry storage cost money, so the runbook includes
+a controller-aware teardown and post-destroy checks.
 
-## Roadmap
+Terraform state and the ECR repositories live in a separate bootstrap stack and
+can remain after the EKS environment is removed. State files, credentials, and
+local variable files are excluded from Git.
 
-- [x] Repository architecture and production guardrails
-- [x] Go health/readiness API and container image
-- [x] Live Kubernetes node, namespace, and pod inventory API
-- [x] Helm workload with RBAC, PDB, autoscaling, and network policy
-- [x] Terraform VPC/EKS baseline, encrypted remote-state bootstrap, and cost budget
-- [x] Pod Identity-backed AWS integrations and encrypted EBS storage
-- [x] GitOps definitions for Prometheus, Grafana, Loki, Tempo, and OpenTelemetry
-- [x] Kubernetes workload, event, network, observability, security, and cost APIs
-- [x] Live multi-view operations console with filtering and responsive navigation
-- [x] Workload drill-down with Pods, images, Services, NetworkPolicies, and Events
-- [x] Correlated incident timelines and server-sent cluster update stream
-- [x] GitOps platform add-on bootstrap definitions
-- [x] Deployable web tier and signed ECR image supply chain
-- [ ] Cilium/Hubble advanced networking profile
-- [ ] Kyverno signature enforcement and runtime security profile
-- [x] Load, failure, recovery, and security evidence in `docs/evidence/`
-- [x] Cognito-authenticated HTTPS ingress and GitOps-managed Route53 DNS
+## Current status
 
-See [docs/architecture.md](docs/architecture.md) for scope and engineering decisions.
+The dashboard, AWS baseline, GitOps stack, observability stack, public ingress,
+image release path, and failure tests have all been exercised on EKS. The live
+environment is currently offline. The static demo and retained test records are
+the public artifacts.
+
+Ideas I have not implemented yet:
+
+- a Cilium/Hubble profile for network-flow inspection;
+- admission-time signature checks with Kyverno;
+- longer soak tests and node/AZ disruption scenarios.

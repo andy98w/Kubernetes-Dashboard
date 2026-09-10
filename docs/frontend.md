@@ -1,40 +1,38 @@
-# Frontend engineering standard
+# Frontend notes
 
-KubeVista is an operations console, not a marketing page. The first viewport is
-a working surface: cluster identity, connection state, last observation time,
-resource health, phase distribution, and inventory provenance. There is no hero
-section, decorative gradient, fabricated time series, or invented workload row.
+The first screen answers a few basic questions: which cluster is selected, when
+the data was collected, whether the API is connected, and whether any nodes or
+pods need attention. The rest of the navigation follows the resources exposed
+by the Go API.
 
 ## Visual system
 
-- Neutral charcoal surfaces and thin structural borders carry hierarchy.
-- Blue is reserved for selection, green/yellow/red for operational state.
-- Corners stay between three and five pixels; panels do not float as generic
-  rounded cards.
-- System and monospace fonts avoid a runtime font request and keep identifiers
-  legible.
-- Icons are small, purpose-built inline SVGs with a consistent stroke system.
-- Every primary navigation item opens a working live-data view; no placeholder
-  routes are presented as product functionality.
+- The UI uses dark neutral surfaces with blue for selection and
+  green/yellow/red for status.
+- System fonts avoid an extra network request. Resource names and IDs use a
+  monospace stack.
+- The icons are inline SVGs, so the frontend has no icon package or runtime
+  asset request.
+- Every navigation item has a working view. Unimplemented ideas stay out of the
+  menu.
 
 ## Data contract and states
 
-The frontend consumes ten read-only contracts under `/api/v1`: `summary`,
+The frontend consumes the following read-only contracts under `/api/v1`: `summary`,
 `workloads`, workload detail, `network`, `events`, `incidents`, `observability`,
 `security`, `cost`, and `settings`. In cluster mode, `/api/v1/stream` carries
 server-sent Pod updates from a Kubernetes watch. The browser debounces those
 signals and refreshes only the active view; the 15-second poll remains as a
 recovery path. Manual refresh and last-known-good data are preserved.
 
-Selecting a workload opens a keyboard-accessible drill-down that correlates its
-controller state with matching Pods, immutable images, Services,
-NetworkPolicies, and Kubernetes Events. The incident view groups warning Events
-into an operator timeline rather than making the user manually join tables.
+Selecting a workload opens a keyboard-accessible panel containing its Pods,
+images, Services, matching NetworkPolicies, and recent Events. The incident
+view groups related warning Events on a timeline.
 
-Platform-posture rows describe committed baseline configuration, not runtime
-evaluation. The security view is an informational runtime scan of Pod security
-contexts, not an admission controller. The cost view is a directional model,
-not an AWS invoice, and lists its exclusions beside the estimate.
+The platform-posture rows come from configuration; they are not runtime policy
+results. The security page checks Pod security contexts but does not enforce
+admission policy. Cost uses fixed hourly rates and node labels, so it should be
+read as an estimate rather than an AWS bill.
 
 ## View inventory
 
@@ -67,16 +65,13 @@ assets immutably, and forwards `/api` and `/healthz` to the internal Go Service.
 The container runs as UID/GID 101 with a read-only root filesystem and no Linux
 capabilities in Kubernetes.
 
-## Public portfolio mode
+## Static demo mode
 
-`npm run build:demo` sets `VITE_DATA_MODE=demo` and embeds a deterministic,
-browser-local representative dataset backed by the verified 2026-08-31 EKS
-deployment. It
-requires no API, cluster, AWS credentials, or paid infrastructure. A persistent
-banner says that the cluster is intentionally offline and links to the public
-architecture and evidence repository. Workload drill-down and incident
-correlation remain fully interactive so a recruiter can evaluate the product
-without mistaking the snapshot for live telemetry.
+`npm run build:demo` sets `VITE_DATA_MODE=demo` and bundles representative data
+from the August 31 EKS run. It does not need the API, AWS credentials, or a live
+cluster. The banner identifies it as a demo and links back to the deployment
+records. Workload drill-down and the disruption timeline still work in this
+build.
 
 The root `vercel.json` selects this build, serves `web/dist`, and applies
 browser-hardening headers. The live container build continues to use the normal

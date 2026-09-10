@@ -7,7 +7,7 @@ locals {
       Environment = var.environment
       ManagedBy   = "Terraform"
       Repository  = "andy98w/Kubernetes-Dashboard"
-      CostCenter  = "portfolio"
+      CostCenter  = "kubevista"
     },
     var.expires_at == null ? {} : { ExpiresAt = var.expires_at },
     var.tags,

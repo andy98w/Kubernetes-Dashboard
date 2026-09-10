@@ -1,11 +1,11 @@
 # Deployment guide
 
-The repository now contains a validated AWS infrastructure baseline. It creates
-a three-AZ VPC, EKS control plane, managed node group, control-plane and VPC flow
-logs, native EKS add-ons, KMS envelope encryption, access entries, and an AWS
-Budget. Nothing is applied automatically by CI.
+Terraform creates a three-AZ VPC, EKS control plane, managed node group,
+control-plane and VPC flow logs, native EKS add-ons, KMS envelope encryption,
+access entries, and an AWS Budget. CI validates the configuration but does not
+apply it.
 
-## Safe deployment workflow
+## Deployment workflow
 
 1. Authenticate with a short-lived AWS IAM Identity Center session.
 2. Copy `infra/terraform/bootstrap/terraform.tfvars.example` to an untracked
@@ -18,7 +18,7 @@ Budget. Nothing is applied automatically by CI.
    `terraform.tfvars.example` to `terraform.tfvars`. Initialize the environment
    with `terraform init -backend-config=backend.hcl`.
 4. Set `admin_principal_arn` to a role, never an IAM user. Keep the API private
-   when using a VPN or VPC runner; for a short portfolio demo, allow only your
+   when using a VPN or VPC runner; for a short test, allow only your
    current public `/32` in `public_access_cidrs`.
 5. Run `terraform plan -out=dev.tfplan`, inspect the complete plan, then apply
    that saved plan. Creating the cluster incurs AWS charges.
@@ -75,9 +75,9 @@ Deploy the digest reported in the workflow summary, not a mutable tag. See
 ## Cost guardrails
 
 EKS has a per-cluster hourly charge, and worker nodes, NAT gateways, load
-balancers, logs, and metrics add cost. Use AWS Budgets, tag all resources, prefer
-a single NAT gateway only in the portfolio profile, and destroy the environment
-after demonstrations. Production would use a NAT gateway per availability zone.
+balancers, logs, and metrics add cost. This environment uses AWS Budgets,
+resource tags, and one NAT gateway to keep the test run affordable. A
+long-running multi-AZ environment should use a NAT gateway per Availability Zone.
 The state bucket is protected by `prevent_destroy`, so retain it for audit and
 recovery or remove that guard only through a deliberate state-retention process.
 ECR storage is much cheaper than a running cluster but is not free; the lifecycle

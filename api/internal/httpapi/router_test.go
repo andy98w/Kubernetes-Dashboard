@@ -25,7 +25,7 @@ func TestHealth(t *testing.T) {
 func TestSummary(t *testing.T) {
 	r := httptest.NewRequest(http.MethodGet, "/api/v1/summary", nil)
 	w := httptest.NewRecorder()
-	New(config.Config{Version: "test", Environment: "test"}, kubernetes.DemoInventory{ClusterName: "recruiter-demo"}).ServeHTTP(w, r)
+	New(config.Config{Version: "test", Environment: "test"}, kubernetes.DemoInventory{ClusterName: "kubevista-demo"}).ServeHTTP(w, r)
 
 	if w.Code != http.StatusOK {
 		t.Fatalf("expected 200, got %d", w.Code)
@@ -34,7 +34,7 @@ func TestSummary(t *testing.T) {
 	if err := json.NewDecoder(w.Body).Decode(&summary); err != nil {
 		t.Fatalf("decode response: %v", err)
 	}
-	if summary.Cluster != "recruiter-demo" || summary.Mode != "demo" || summary.Nodes.Ready != 3 {
+	if summary.Cluster != "kubevista-demo" || summary.Mode != "demo" || summary.Nodes.Ready != 3 {
 		t.Fatalf("unexpected summary: %+v", summary)
 	}
 }

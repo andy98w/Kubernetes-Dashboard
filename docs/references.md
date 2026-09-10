@@ -1,8 +1,7 @@
 # Primary references
 
-The implementation is based on upstream project and AWS documentation rather
-than third-party tutorials. Version pins are validated by
-`scripts/validate-platform.sh`.
+These are the upstream references used for the implementation. Chart version
+pins are also checked by `scripts/validate-platform.sh`.
 
 - [Amazon EKS Kubernetes versions](https://docs.aws.amazon.com/eks/latest/userguide/kubernetes-versions.html)
 - [Amazon EKS add-ons](https://docs.aws.amazon.com/eks/latest/userguide/eks-add-ons.html)

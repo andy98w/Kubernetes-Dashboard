@@ -8,7 +8,7 @@ resource "aws_route53_zone" "public" {
   count = local.public_delivery_enabled ? 1 : 0
 
   name    = var.public_zone_name
-  comment = "Delegated public zone for the KubeVista portfolio environment"
+  comment = "Delegated public zone for the KubeVista test environment"
 
   tags = local.tags
 }

@@ -37,11 +37,11 @@ kubectl apply -f platform/examples/external-secret.yaml
 
 Never put a real secret value in Git or Terraform variables.
 
-## Ephemeral portfolio lifecycle
+## Short-lived environment workflow
 
-The production-shaped environment is intentionally run on demand. Use an
-eight-hour default TTL, preserve the encrypted state backend, and destroy the
-chargeable environment after each demonstration.
+The EKS environment runs on demand and uses an eight-hour default TTL. The
+encrypted state backend remains between runs; the cluster and other chargeable
+resources should be removed when testing is finished.
 
 For a local SSO session:
 
@@ -53,9 +53,9 @@ scripts/terraform-ephemeral.sh plan
 scripts/terraform-ephemeral.sh apply
 ```
 
-The plan adds an `ExpiresAt` tag to tagged AWS resources and writes the deadline
-to ignored local `work/ephemeral-deployment.env`. A tag is evidence and an
-operator signal; it does not automatically delete resources.
+The plan adds an `ExpiresAt` tag to supported AWS resources and writes the
+deadline to ignored local `work/ephemeral-deployment.env`. The tag is a reminder;
+it does not delete anything automatically.
 
 The manual `Ephemeral EKS lifecycle` GitHub workflow offers the same
 plan/apply/destroy controls. Its `kubevista-ephemeral` GitHub Environment must
@@ -140,10 +140,9 @@ the terminal; do not paste them into tickets, chat, screenshots, or commits.
 
 ## Teardown
 
-Treat teardown as an ordered controller and ownership workflow, not just a
-Terraform command. Kubernetes controllers can recreate resources while they
-are running, and dynamically provisioned resources may not exist in Terraform
-state.
+Teardown has to account for Kubernetes controllers and resources that are not
+in Terraform state. Argo CD can recreate objects while it is running, and the
+load balancer and EBS controllers create AWS resources of their own.
 
 First stop Argo CD reconciliation, delete the public Ingress, and wait until the
 AWS Load Balancer Controller has removed the ALB and target groups:
@@ -175,7 +174,7 @@ KUBEVISTA_AWS_ACCOUNT_ID=<expected-account-id> \
 scripts/terraform-ephemeral.sh destroy
 ```
 
-The state bucket is intentionally retained. Confirm EBS volumes, load balancers,
+The state bucket is retained. Confirm EBS volumes, load balancers,
 NAT gateways, and CloudWatch log groups according to the chosen retention policy
 so no unexpected recurring charges remain.
 
@@ -226,7 +225,7 @@ observability volumes, SSO recovery, parent-zone cleanup, and zero-resource
 verification, is recorded in
 [`docs/evidence/teardown-2026-08-31.md`](evidence/teardown-2026-08-31.md).
 
-Keep static portfolio sites outside EKS (for example, on static object/CDN
-hosting). The cluster is reserved for demonstrations that benefit from
+Keep static sites outside EKS (for example, on static object/CDN hosting). The
+cluster is reserved for tests that benefit from
 Kubernetes scheduling, IAM, GitOps, and observability; placing a static site in
 EKS does not reduce the fixed EKS or NAT gateway charges.

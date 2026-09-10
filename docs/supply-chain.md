@@ -18,9 +18,9 @@ Git tag/manual dispatch
   -> reviewed digest promoted through Helm/Argo CD
 ```
 
-No AWS access key is stored in GitHub. AWS trust matches GitHub's durable owner
-and repository IDs as well as the protected environment, rather than relying
-only on mutable display names. The publisher role can request an ECR
+No AWS access key is stored in GitHub. The trust policy checks GitHub's numeric
+owner and repository IDs, the protected environment, and the STS audience.
+The publisher role can request an ECR
 authorization token and upload layers only to the two application repositories;
 it cannot administer ECR, read Terraform state, or change EKS.
 
@@ -50,8 +50,8 @@ cosign verify \
 ```
 
 ECR lifecycle rules delete untagged images after seven days and retain the
-latest 20 `sha-`/`v` images. ECR basic scanning is a release signal, not a policy
-gate yet; Kyverno digest/signature enforcement is the next control-plane step.
+latest 20 `sha-`/`v` images. Basic scanning reports findings but does not block a
+deployment. Kyverno signature enforcement is still on the backlog.
 
 The dashboard chart currently promotes the `v0.2.0` build from commit `79ff0f9`
 by digest. API digest

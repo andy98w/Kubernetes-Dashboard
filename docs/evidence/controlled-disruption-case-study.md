@@ -1,17 +1,13 @@
-# Controlled disruption case study
-
-## Scenario
+# Pod replacement test
 
 KubeVista's API and web tiers each ran with two replicas, a PodDisruptionBudget,
 rolling-update safeguards, health probes, and topology spreading. To validate
 that those controls worked together, one running pod from each tier was removed
 while Fortio continuously sent traffic through the Kubernetes Service.
 
-## Hypothesis
-
-The surviving replica should continue serving requests while the Deployment
-controller creates a replacement. Readiness should prevent traffic from
-reaching the replacement until it can serve successfully.
+The expected behavior was straightforward: the surviving replica would keep
+serving traffic, the Deployment would create a replacement, and the readiness
+probe would keep that replacement out of Service endpoints until it was ready.
 
 ## Observed signals
 
@@ -23,21 +19,18 @@ reaching the replacement until it can serve successfully.
 | Average latency | `0.741 ms` | `2.597 ms` |
 | Approximate p99 | `2.78 ms` | `8.51 ms` |
 
-## Impact and recovery
+## Result
 
 No request failure was observed during either controlled single-pod loss. The
 Deployment controller restored the desired replica count, and readiness gating
 kept the replacement out of service until it was healthy.
 
-## Why this is useful evidence
+The test exercised replica count, Service routing, probes, scheduling, and
+controller reconciliation together. It did not cover a node or Availability
+Zone outage, a control-plane failure, dependent-service failures, or sustained
+peak traffic.
 
-This test validates a complete behavior rather than the presence of individual
-YAML fields: replica count, Service routing, probes, scheduling, and controller
-reconciliation all contributed to continuity. It does not prove tolerance of a
-node or Availability Zone outage, control-plane failure, correlated dependency
-failure, or sustained peak traffic.
-
-## Follow-up production tests
+## Tests still worth running
 
 1. Drain a node and verify PDB behavior and cross-node rescheduling.
 2. Exercise an Availability Zone failure with sufficient capacity in the
@@ -48,4 +41,4 @@ failure, or sustained peak traffic.
    stale-data, and stream-reconnect behavior.
 
 The raw summarized measurements are retained in
-[the live deployment record](live-eks-2026-08-31.md#load-and-recovery-evidence).
+[the live deployment record](live-eks-2026-08-31.md#load-and-recovery-tests).

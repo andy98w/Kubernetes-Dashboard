@@ -2,25 +2,24 @@
 
 ## Goal
 
-Demonstrate production Kubernetes engineering on AWS through a system that can
-be deployed, observed, secured, failed, and recovered. The repository favors
-explainable engineering over a long list of logos.
+I wanted one project that covered the full EKS lifecycle: provision it, deploy
+an application, observe it under load, break part of it, recover, and clean up
+the AWS resources afterward. The dashboard gives that platform a real workload
+instead of leaving the repository as Terraform and YAML alone.
 
 ## Target platform
 
-- **Compute:** EKS managed control plane and managed node group; Karpenter is a
-  later optimization after the baseline is measurable.
-- **Networking:** AWS VPC CNI is the safest initial EKS default. Cilium runs in
-  the baseline. Cilium/Hubble remains an advanced profile rather than being
-  installed beside VPC CNI without an explicit chaining and support decision.
+- **Compute:** EKS managed control plane and one managed node group.
+- **Networking:** AWS VPC CNI with its NetworkPolicy agent. Cilium and Hubble
+  are not installed; they remain a possible separate networking profile.
 - **Ingress:** AWS Load Balancer Controller, ACM TLS, Route 53 DNS.
 - **Identity:** EKS access entries for humans and EKS Pod Identity per workload.
 - **Delivery:** GitHub Actions builds/scans/signs; Argo CD reconciles deployment.
 - **Observability:** OpenTelemetry instrumentation and collectors, Prometheus,
-  Grafana, Loki, and Tempo. SLOs and alerts live with the workload.
+  Grafana, Loki, and Tempo.
 - **Security:** private worker subnets, KMS envelope encryption, Secrets Manager
-  through External Secrets, Kyverno admission policy, Trivy, read-only RBAC,
-  default-deny network policy, Pod Security Standards.
+  through External Secrets, Trivy scanning, read-only RBAC, NetworkPolicies,
+  and restricted container security contexts. Kyverno is not installed.
 
 The dashboard chart defaults `networkPolicy.apiServerCidr` to the exact
 `kubernetes.default` Service ClusterIP used by the dev cluster. Each additional
@@ -28,25 +27,23 @@ environment must replace it with its own API Service IP (or the smallest
 practical service CIDR); the managed control-plane VPC endpoint is not the
 destination seen by in-cluster clients.
 
-The observability deployment is intentionally sized for a portfolio cluster:
-Prometheus, Loki, and Tempo retain data on encrypted gp3 volumes, but Loki and
-Tempo run as single replicas. A production profile should use object storage,
-multi-AZ replicas, tested restore procedures, and retention based on SLO and
-compliance requirements.
+Prometheus, Loki, and Tempo use encrypted gp3 volumes. Loki and Tempo each run
+as a single replica to keep the test environment affordable. For a long-running
+environment I would move logs and traces to object storage, add replicas across
+Availability Zones, and test restores.
 
-## Production profile versus portfolio profile
+## Test environment versus long-running production
 
-The portfolio profile uses one region, one cluster, and small on-demand nodes.
-A real organization should use separate AWS accounts and clusters per lifecycle
-boundary, multi-region recovery objectives where justified, central identity,
-and a remote Terraform state backend with locking and recovery controls.
+This repository uses one region, one cluster, and a single NAT gateway. A
+long-running production setup would normally separate environments into AWS
+accounts, use one NAT gateway per Availability Zone, centralize audit logs, and
+define recovery objectives before adding multi-region complexity.
 
-## Intentional exclusions
+## Out of scope
 
 - The dashboard does not edit or delete Kubernetes resources.
 - Service mesh is excluded until there is a concrete mTLS or traffic-management
-  requirement; Cilium and standard telemetry cover this project's needs.
+  requirement; NetworkPolicies and the existing telemetry cover this test.
 - Vault is excluded because AWS Secrets Manager plus External Secrets avoids
   operating another critical stateful control plane for a single-cloud demo.
-- Running every CNCF tool is not a production practice. Each addition must map
-  to a threat, SLO, operational constraint, or documented experiment.
+- Cilium/Hubble and Kyverno are roadmap experiments, not deployed components.

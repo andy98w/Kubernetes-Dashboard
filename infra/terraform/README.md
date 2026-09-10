@@ -1,9 +1,9 @@
 # AWS infrastructure
 
-This directory is deliberately split into two Terraform root modules:
+There are two Terraform root modules:
 
 - `bootstrap/` creates the encrypted, versioned S3 state bucket and KMS key.
-- `environments/dev/` creates the portfolio VPC, EKS cluster, nodes, logs,
+- `environments/dev/` creates the VPC, EKS cluster, nodes, logs,
   access entry, managed add-ons, Pod Identity roles, and cost budget.
 
 Terraform and provider/module versions are constrained and their dependency
@@ -57,8 +57,7 @@ reviewable source for every required value.
 
 The default API endpoint is private-only. A local workstation can reach it only
 through private connectivity. A temporary demo may set `public_access_cidrs` to
-the operator's exact public `/32`; broad public CIDRs are intentionally excluded
-from the example.
+the operator's exact public `/32`. The example rejects broad public CIDRs.
 
 The EKS add-on lifecycle owns the Pod Identity associations for VPC CNI and EBS
 CSI. Terraform separately associates service accounts for AWS Load Balancer
@@ -66,9 +65,9 @@ Controller and External Secrets. External Secrets can read only Secrets Manager
 resources under `external_secret_prefix`; no AWS access keys are stored in
 Kubernetes.
 
-## Production boundaries
+## Differences for a long-running environment
 
-The portfolio profile uses one NAT gateway to control cost. Set
+This configuration uses one NAT gateway to control cost. Set
 `single_nat_gateway = false` for one NAT gateway per availability zone. A real
 production organization should also use separate AWS accounts, a private CI
 runner, protected plan/apply environments, centralized audit logs, backup and
@@ -86,5 +85,5 @@ terraform plan -destroy -out=destroy.tfplan
 terraform apply destroy.tfplan
 ```
 
-The remote-state bucket intentionally has `prevent_destroy`; preserve it for
-state recovery and audit unless a deliberate retention process says otherwise.
+The remote-state bucket has `prevent_destroy`. Keep it for state recovery, or
+remove that guard only after deciding how the state will be retained.

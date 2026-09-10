@@ -1,5 +1,5 @@
 variable "aws_region" {
-  description = "AWS region for the portfolio environment."
+  description = "AWS region for the KubeVista environment."
   type        = string
   default     = "us-west-2"
 }
@@ -54,7 +54,7 @@ variable "public_access_cidrs" {
 }
 
 variable "single_nat_gateway" {
-  description = "Use one NAT gateway to reduce portfolio cost. Disable for one per AZ."
+  description = "Use one NAT gateway to reduce test-environment cost. Disable for one per AZ."
   type        = bool
   default     = true
 }
@@ -66,7 +66,7 @@ variable "node_instance_types" {
 }
 
 variable "monthly_budget_usd" {
-  description = "Monthly AWS cost budget for the portfolio environment."
+  description = "Monthly AWS cost budget for the KubeVista environment."
   type        = number
   default     = 100
 }

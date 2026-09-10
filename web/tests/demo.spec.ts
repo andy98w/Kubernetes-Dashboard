@@ -1,10 +1,10 @@
 import { expect, test } from '@playwright/test'
 
-test('labels the offline portfolio dataset honestly', async ({ page }) => {
+test('labels the offline dataset honestly', async ({ page }) => {
   await page.goto('/#/overview')
-  await expect(page.getByText('Portfolio demo', { exact: true })).toBeVisible()
-  await expect(page.getByText(/paid cluster is intentionally offline/i)).toBeVisible()
-  await expect(page.getByRole('link', { name: /architecture & evidence/i })).toHaveAttribute('href', /github\.com\/andy98w\/Kubernetes-Dashboard/)
+  await expect(page.getByText('Demo data', { exact: true }).first()).toBeVisible()
+  await expect(page.getByText(/cluster has since been shut down/i)).toBeVisible()
+  await expect(page.getByRole('link', { name: /view deployment notes/i })).toHaveAttribute('href', /github\.com\/andy98w\/Kubernetes-Dashboard/)
   await expect(page.getByText('Soon', { exact: true })).toHaveCount(0)
 })
 
@@ -30,7 +30,7 @@ test('presents measured resilience evidence as an incident timeline', async ({ p
   await expect(page.getByText('Replacement API pod became Ready in 2 seconds')).toBeVisible()
 })
 
-test('does not overflow the viewport at recruiter-facing breakpoints', async ({ page }) => {
+test('does not overflow the viewport at supported breakpoints', async ({ page }) => {
   await page.goto('/#/workloads')
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth)
   expect(overflow).toBe(false)
