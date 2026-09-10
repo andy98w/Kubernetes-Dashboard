@@ -44,6 +44,9 @@ type Inventory interface {
 	Observability(context.Context) (Observability, error)
 	Security(context.Context) (Security, error)
 	Cost(context.Context) (Cost, error)
+	WorkloadDetail(context.Context, string, string, string) (WorkloadDetail, error)
+	Incidents(context.Context) (Incidents, error)
+	Updates(context.Context) (<-chan ClusterUpdate, error)
 }
 
 type Client struct {

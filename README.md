@@ -16,20 +16,43 @@ a reason to exist, a documented trade-off, and an automated verification path.
 - CI checks, autoscaling, disruption budgets, probes, and graceful shutdown
 - Immutable ECR images with SBOM/provenance attestations and keyless Cosign signatures
 
+## Verified outcomes
+
+These are measurements from the recorded live deployment, not projected claims:
+
+| Validation | Result |
+| --- | --- |
+| Baseline API load | `744/744` HTTP 200 at 25 requests/second; `0.842 ms` average, ~`4.85 ms` p99 |
+| API pod replacement | Ready in 2 seconds; `896/896` HTTP 200 during disruption, ~`2.78 ms` p99 |
+| Web pod replacement | Ready in 2 seconds; `896/896` HTTP 200 during disruption, ~`8.51 ms` p99 |
+| GitOps convergence | 12 Argo CD applications `Synced` and `Healthy` |
+| Network isolation | Authorized smoke workload succeeded; untrusted workload was blocked from both tiers |
+| Teardown | EKS, VPC, NAT, ALB, Route53 delegation, Cognito, KMS, logs, and storage verified absent |
+
+See the [evidence index](docs/evidence/README.md) for the claim-to-proof map.
+
 ## Architecture
 
-```text
-Browser -> ALB/HTTPS -> dashboard web -> Go API -> Kubernetes API
-                            |              |
-                            |              +-> OpenTelemetry -> Tempo
-                            +-> metrics/logs -> Prometheus/Loki -> Grafana
-
-GitHub Actions -> ECR -> Argo CD -> EKS
-Terraform --------------------^     |-- VPC CNI + EBS CSI
-                                    |-- Pod Identity controllers
-                                    |-- External Secrets
-                                    `-- OTel + Prometheus stack
+```mermaid
+flowchart LR
+    User[Authenticated browser] -->|HTTPS + Cognito| ALB[AWS ALB]
+    ALB --> Web[React + NGINX web tier]
+    Web --> API[Go client-go API]
+    API -->|read-only RBAC| K8s[Kubernetes API]
+    API -->|OTLP traces| OTel[OpenTelemetry gateway]
+    OTel --> Tempo[Tempo]
+    Prom[Prometheus] --> Grafana[Grafana]
+    Loki[Loki] --> Grafana
+    Tempo --> Grafana
+    GHA[GitHub Actions + OIDC] --> ECR[ECR signed images]
+    ECR --> Argo[Argo CD + Helm]
+    Argo --> EKS[EKS workloads]
+    Terraform[Terraform] --> EKS
 ```
+
+The EKS nodes, observability storage, and application workloads run in private
+subnets across Availability Zones. Only the authenticated ALB is public;
+Grafana and Argo CD remain private administrative surfaces.
 
 The dashboard is intentionally **read-only by default**. Mutating cluster tools
 look impressive in demos but create an unnecessarily dangerous security model.
@@ -70,6 +93,17 @@ The API uses your current kubeconfig outside a cluster and in-cluster service
 account credentials on EKS. Set `KUBEVISTA_DEMO_MODE=true` to run without a
 cluster while developing the UI.
 
+To build the permanent, zero-AWS-cost recruiter demo, run:
+
+```bash
+cd web
+npm run build:demo
+```
+
+That build embeds an explicitly labeled snapshot from the validated EKS run;
+it never presents sample data as a currently running cluster. The root
+`vercel.json` configures this profile for static hosting.
+
 ## AWS deployment
 
 Start with [docs/deployment.md](docs/deployment.md). A continuously running EKS
@@ -91,7 +125,8 @@ and its verified destruction and retained artifacts are recorded in
 - [x] GitOps definitions for Prometheus, Grafana, Loki, Tempo, and OpenTelemetry
 - [x] Kubernetes workload, event, network, observability, security, and cost APIs
 - [x] Live multi-view operations console with filtering and responsive navigation
-- [ ] Workload resource drill-down and Hubble flow visualization
+- [x] Workload drill-down with Pods, images, Services, NetworkPolicies, and Events
+- [x] Correlated incident timelines and server-sent cluster update stream
 - [x] GitOps platform add-on bootstrap definitions
 - [x] Deployable web tier and signed ECR image supply chain
 - [ ] Cilium/Hubble advanced networking profile

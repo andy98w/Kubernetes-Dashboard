@@ -2,6 +2,8 @@ package kubernetes
 
 import (
 	"context"
+	"fmt"
+	"strings"
 	"time"
 )
 
@@ -54,4 +56,38 @@ func (DemoInventory) Security(context.Context) (Security, error) {
 
 func (DemoInventory) Cost(context.Context) (Cost, error) {
 	return Cost{Nodes: []NodeCost{{"demo-node-a", "t3.medium", "SPOT", 0.0146}, {"demo-node-b", "t3.medium", "SPOT", 0.0146}}, ControlPlaneHourly: 0.10, LoadBalancerHourly: 0.0225, NATGatewayHourly: 0.045, EstimatedHourly: 0.1967, Currency: "USD", Disclaimer: "Directional estimate for compute and fixed hourly infrastructure only; excludes storage, data processing, logs, taxes, discounts, and free-tier credits.", ObservedAt: time.Now().UTC()}, nil
+}
+
+func (d DemoInventory) WorkloadDetail(ctx context.Context, namespace, kind, name string) (WorkloadDetail, error) {
+	workloads, _ := d.Workloads(ctx)
+	for _, w := range workloads.Items {
+		if w.Namespace == namespace && strings.EqualFold(w.Kind, kind) && w.Name == name {
+			now := time.Now().UTC()
+			return WorkloadDetail{Workload: w, Strategy: "RollingUpdate", Selector: map[string]string{"app.kubernetes.io/name": name}, Labels: map[string]string{"app.kubernetes.io/name": name, "environment": "production"}, Images: []ContainerImage{{"app", "public.ecr.aws/kubevista/" + name + ":sha-8f04c2a"}}, Pods: []PodDetail{{name + "-7d8c9b-x2m4p", "Running", 1, 1, 0, "ip-10-0-11-42", now.Add(-3 * time.Hour)}, {name + "-7d8c9b-z9q7n", "Running", 1, 1, 0, "ip-10-0-21-18", now.Add(-3 * time.Hour)}}, Services: []Service{{namespace, name, "ClusterIP", "172.20.4.18", []string{"80/TCP"}}}, Policies: []Policy{{namespace, name, 2, 1}}, Events: []Event{{"Normal", "ScalingReplicaSet", namespace, "Deployment/" + name, "Scaled up replica set to 2.", 1, now.Add(-22 * time.Minute)}}, ObservedAt: now}, nil
+		}
+	}
+	return WorkloadDetail{}, fmt.Errorf("workload not found")
+}
+
+func (d DemoInventory) Incidents(context.Context) (Incidents, error) {
+	now := time.Now().UTC()
+	return Incidents{[]Incident{{"test-2026-08-31-api-loss", "Controlled", "Resolved", "Controlled API pod-loss recovery", "A running API pod was removed while Fortio generated traffic to validate disruption tolerance.", "kubevista", "Deployment/kubevista-api", now.Add(-47 * time.Minute), []IncidentEvidence{{"Load generator", "Fortio maintained 20 requests per second during the test", now.Add(-47 * time.Minute)}, {"Kubernetes controller", "Replacement API pod became Ready in 2 seconds", now.Add(-46 * time.Minute)}, {"Verification", "896/896 requests returned HTTP 200; p99 was approximately 2.78 ms", now.Add(-43 * time.Minute)}}}}, now}, nil
+}
+
+func (DemoInventory) Updates(ctx context.Context) (<-chan ClusterUpdate, error) {
+	ch := make(chan ClusterUpdate, 1)
+	go func() {
+		defer close(ch)
+		ticker := time.NewTicker(8 * time.Second)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case t := <-ticker.C:
+				ch <- ClusterUpdate{"pods", "modified", "kubevista", "kubevista-api", t.UTC()}
+			}
+		}
+	}()
+	return ch, nil
 }

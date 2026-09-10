@@ -11,4 +11,6 @@ dist/
 coverage/
 bin/
 work/
+web/test-results/
+web/playwright-report/
 outputs/

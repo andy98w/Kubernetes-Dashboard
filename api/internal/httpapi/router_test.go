@@ -54,7 +54,7 @@ func TestMetrics(t *testing.T) {
 
 func TestDashboardInventoryRoutes(t *testing.T) {
 	handler := New(config.Config{Version: "test", Environment: "test", ClusterName: "test-cluster"}, kubernetes.DemoInventory{ClusterName: "test-cluster"})
-	for _, path := range []string{"/api/v1/workloads", "/api/v1/network", "/api/v1/events", "/api/v1/observability", "/api/v1/security", "/api/v1/cost", "/api/v1/settings"} {
+	for _, path := range []string{"/api/v1/workloads", "/api/v1/workloads/kubevista/Deployment/kubevista-api", "/api/v1/network", "/api/v1/events", "/api/v1/observability", "/api/v1/security", "/api/v1/cost", "/api/v1/incidents", "/api/v1/settings"} {
 		t.Run(path, func(t *testing.T) {
 			r := httptest.NewRequest(http.MethodGet, path, nil)
 			w := httptest.NewRecorder()

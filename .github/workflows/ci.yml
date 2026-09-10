@@ -26,6 +26,10 @@ jobs:
         working-directory: web
       - run: npm run check
         working-directory: web
+      - run: npx playwright install --with-deps chromium
+        working-directory: web
+      - run: npm run test:e2e
+        working-directory: web
   containers:
     runs-on: ubuntu-latest
     strategy:

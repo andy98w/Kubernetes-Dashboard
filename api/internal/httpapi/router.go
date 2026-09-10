@@ -3,6 +3,7 @@ package httpapi
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"time"
@@ -38,6 +39,17 @@ func New(cfg config.Config, inventory cluster.Inventory) http.Handler {
 		serveInventory(w, r, "summary", inventory.Summary)
 	})
 	mux.HandleFunc("GET /api/v1/workloads", func(w http.ResponseWriter, r *http.Request) { serveInventory(w, r, "workloads", inventory.Workloads) })
+	mux.HandleFunc("GET /api/v1/workloads/{namespace}/{kind}/{name}", func(w http.ResponseWriter, r *http.Request) {
+		ctx, cancel := context.WithTimeout(r.Context(), 8*time.Second)
+		defer cancel()
+		value, err := inventory.WorkloadDetail(ctx, r.PathValue("namespace"), r.PathValue("kind"), r.PathValue("name"))
+		if err != nil {
+			slog.Warn("workload detail unavailable", "error", err)
+			writeJSON(w, http.StatusNotFound, map[string]string{"error": "workload not found"})
+			return
+		}
+		writeJSON(w, http.StatusOK, value)
+	})
 	mux.HandleFunc("GET /api/v1/network", func(w http.ResponseWriter, r *http.Request) { serveInventory(w, r, "network", inventory.Network) })
 	mux.HandleFunc("GET /api/v1/events", func(w http.ResponseWriter, r *http.Request) { serveInventory(w, r, "events", inventory.Events) })
 	mux.HandleFunc("GET /api/v1/observability", func(w http.ResponseWriter, r *http.Request) {
@@ -45,11 +57,49 @@ func New(cfg config.Config, inventory cluster.Inventory) http.Handler {
 	})
 	mux.HandleFunc("GET /api/v1/security", func(w http.ResponseWriter, r *http.Request) { serveInventory(w, r, "security", inventory.Security) })
 	mux.HandleFunc("GET /api/v1/cost", func(w http.ResponseWriter, r *http.Request) { serveInventory(w, r, "cost", inventory.Cost) })
+	mux.HandleFunc("GET /api/v1/incidents", func(w http.ResponseWriter, r *http.Request) { serveInventory(w, r, "incidents", inventory.Incidents) })
+	mux.HandleFunc("GET /api/v1/stream", func(w http.ResponseWriter, r *http.Request) { streamUpdates(w, r, inventory) })
 	mux.HandleFunc("GET /api/v1/settings", func(w http.ResponseWriter, _ *http.Request) {
 		writeJSON(w, http.StatusOK, map[string]any{"cluster": cfg.ClusterName, "environment": cfg.Environment, "version": cfg.Version, "readOnly": true, "refreshSeconds": 15})
 	})
 	mux.Handle("GET /metrics", promhttp.Handler())
 	return securityHeaders(mux)
+}
+
+func streamUpdates(w http.ResponseWriter, r *http.Request, inventory cluster.Inventory) {
+	flusher, ok := w.(http.Flusher)
+	if !ok {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "streaming unsupported"})
+		return
+	}
+	updates, err := inventory.Updates(r.Context())
+	if err != nil {
+		writeJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "cluster stream unavailable"})
+		return
+	}
+	w.Header().Set("Content-Type", "text/event-stream")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("Connection", "keep-alive")
+	fmt.Fprint(w, "event: ready\ndata: {}\n\n")
+	flusher.Flush()
+	heartbeat := time.NewTicker(15 * time.Second)
+	defer heartbeat.Stop()
+	for {
+		select {
+		case <-r.Context().Done():
+			return
+		case <-heartbeat.C:
+			fmt.Fprint(w, ": heartbeat\n\n")
+			flusher.Flush()
+		case update, ok := <-updates:
+			if !ok {
+				return
+			}
+			payload, _ := json.Marshal(update)
+			fmt.Fprintf(w, "event: cluster-update\ndata: %s\n\n", payload)
+			flusher.Flush()
+		}
+	}
 }
 
 func serveInventory[T any](w http.ResponseWriter, r *http.Request, resource string, query func(context.Context) (T, error)) {

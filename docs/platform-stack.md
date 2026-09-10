@@ -131,7 +131,10 @@ Public exposure requires a separate authentication and threat-model decision.
 
 KubeVista is a Go `client-go` application, not a static mock. In cluster mode it
 uses its service-account token and read-only ClusterRole to count nodes,
-namespaces, and pod phases. Readiness verifies Kubernetes API access with a
+namespaces, and pod phases. It joins workload controllers to their Pods, images,
+Services, NetworkPolicies, and Events without mutation. A server-sent event
+endpoint forwards Pod watch notifications so the React client can refresh the
+active view promptly. Readiness verifies Kubernetes API access with a
 three-second deadline. Local demo mode uses deterministic sample data.
 
 Testing layers:
