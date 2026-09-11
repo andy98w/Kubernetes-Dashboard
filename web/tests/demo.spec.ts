@@ -2,9 +2,10 @@ import { expect, test } from '@playwright/test'
 
 test('labels the offline dataset honestly', async ({ page }) => {
   await page.goto('/#/overview')
-  await expect(page.getByText('Demo data', { exact: true }).first()).toBeVisible()
-  await expect(page.getByText(/cluster has since been shut down/i)).toBeVisible()
-  await expect(page.getByRole('link', { name: /view deployment notes/i })).toHaveAttribute('href', /github\.com\/andy98w\/Kubernetes-Dashboard/)
+  const demoBanner = page.locator('.demo-banner')
+  await expect(demoBanner.getByText('Demo data', { exact: true })).toBeVisible()
+  await expect(demoBanner.getByText(/cluster has since been shut down/i)).toBeVisible()
+  await expect(demoBanner.getByRole('link', { name: /view deployment notes/i })).toHaveAttribute('href', /github\.com\/andy98w\/Kubernetes-Dashboard/)
   await expect(page.getByText('Soon', { exact: true })).toHaveCount(0)
 })
 
