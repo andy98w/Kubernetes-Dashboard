@@ -47,11 +47,17 @@ type Inventory interface {
 	WorkloadDetail(context.Context, string, string, string) (WorkloadDetail, error)
 	Incidents(context.Context) (Incidents, error)
 	Updates(context.Context) (<-chan ClusterUpdate, error)
+	PlanOperation(context.Context, OperationRequest) (OperationPlan, error)
+	ExecuteOperation(context.Context, OperationRequest, string) (OperationRecord, error)
+	RecentOperations(context.Context) ([]OperationRecord, error)
 }
 
 type Client struct {
 	client      kubernetes.Interface
 	clusterName string
+	operations  operationPolicy
+	audit       *operationAudit
+	plans       *operationPlans
 }
 
 func New(cfg config.Config) (Inventory, error) {
@@ -70,11 +76,19 @@ func New(cfg config.Config) (Inventory, error) {
 	if err != nil {
 		return nil, fmt.Errorf("create Kubernetes client: %w", err)
 	}
-	return NewClient(client, cfg.ClusterName), nil
+	return NewClientWithOperations(client, cfg.ClusterName, cfg.OperationsEnabled, cfg.OperationNamespaces, cfg.MinReplicas, cfg.MaxReplicas), nil
 }
 
 func NewClient(client kubernetes.Interface, clusterName string) *Client {
-	return &Client{client: client, clusterName: clusterName}
+	return NewClientWithOperations(client, clusterName, false, nil, 1, 6)
+}
+
+func NewClientWithOperations(client kubernetes.Interface, clusterName string, enabled bool, namespaces []string, minReplicas, maxReplicas int32) *Client {
+	allowed := map[string]bool{}
+	for _, namespace := range namespaces {
+		allowed[namespace] = true
+	}
+	return &Client{client: client, clusterName: clusterName, operations: operationPolicy{enabled, allowed, minReplicas, maxReplicas}, audit: &operationAudit{records: []OperationRecord{}}, plans: &operationPlans{entries: map[string]operationPlanEntry{}}}
 }
 
 func loadRESTConfig(explicitPath string) (*rest.Config, error) {

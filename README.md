@@ -1,6 +1,8 @@
 # KubeVista
 
-KubeVista is a read-only Kubernetes dashboard backed by a Go API. I built it to
+KubeVista is a Kubernetes operations dashboard backed by a Go API. It is
+read-only by default and includes an opt-in, guarded workflow for Deployment
+restarts and scaling. I built it to
 work through the parts of running EKS that are easy to miss in a small demo:
 networking, IAM, GitOps, telemetry, image provenance, failure testing, and
 cleanup.
@@ -12,7 +14,8 @@ cluster as offline.
 
 ## What is in the repository
 
-- Go API using Kubernetes `client-go` and get/list/watch-only RBAC
+- Go API using Kubernetes `client-go`, read-only inventory RBAC, and an optional
+  namespace-scoped operator role
 - React and TypeScript dashboard for workloads, networking, events, incidents,
   security checks, telemetry components, and estimated cost
 - Terraform for a three-tier VPC, EKS, IAM, encryption, logging, and budgets
@@ -43,7 +46,7 @@ flowchart LR
     User[Browser] -->|HTTPS + Cognito| ALB[AWS ALB]
     ALB --> Web[React + NGINX]
     Web --> API[Go API]
-    API -->|read-only RBAC| K8s[Kubernetes API]
+    API -->|inventory + guarded operations| K8s[Kubernetes API]
     API -->|OTLP| OTel[OpenTelemetry]
     OTel --> Tempo[Tempo]
     Prom[Prometheus] --> Grafana[Grafana]
@@ -59,8 +62,12 @@ Worker nodes, application pods, and observability storage ran in private
 subnets across three Availability Zones. The application ALB was public and
 used Cognito authentication. Grafana and Argo CD stayed private.
 
-The API cannot create, update, delete, exec into pods, or read Secrets. Its
-ClusterRole is limited to the resources displayed by the dashboard.
+The default API role cannot create, update, delete, exec into pods, or read
+Secrets. When guarded operations are explicitly enabled, a separate namespaced
+Role allows only Deployment patches and scale-subresource updates. Each request
+must pass a server-side dry run, replica guardrails, an optimistic concurrency
+check, a five-minute single-use review plan, and an operator-provided reason.
+Arbitrary YAML, Secrets, RBAC, exec, and generic deletion remain unavailable.
 
 ## Repository layout
 
@@ -94,6 +101,13 @@ make run-web
 
 Outside Kubernetes, the API uses the current kubeconfig. Set
 `KUBEVISTA_DEMO_MODE=true` to run the API with sample data.
+
+Guarded writes remain off unless `KUBEVISTA_OPERATIONS_ENABLED=true`. Limit
+their scope with `KUBEVISTA_OPERATION_NAMESPACES`, `KUBEVISTA_MIN_REPLICAS`,
+and `KUBEVISTA_MAX_REPLICAS`. Production mode also requires
+`KUBEVISTA_ALB_SIGNER_ARN`; the API verifies the ALB-signed claims token before
+using its subject as the operator identity. The Helm chart exposes the same
+controls under `operations`; see the runbook before enabling them.
 
 The standalone demo build needs no API or AWS resources:
 

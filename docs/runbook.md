@@ -138,6 +138,51 @@ the terminal; do not paste them into tickets, chat, screenshots, or commits.
 | Web health is 502/503 | Check API endpoints, web-to-API NetworkPolicy, CoreDNS, and NGINX logs |
 | Argo application is OutOfSync | Inspect diff before syncing; confirm chart version and CRD ownership; do not force-delete production CRDs |
 
+## Guarded dashboard operations
+
+The chart leaves browser-triggered operations disabled. To enable them for a
+short-lived environment, review the namespace and replica limits in
+`platform/apps/dashboard/values.yaml`, then set:
+
+```yaml
+operations:
+  enabled: true
+  albSignerArn: arn:aws:elasticloadbalancing:us-west-2:123456789012:loadbalancer/app/kubevista-dev/example
+  namespaces: [kubevista]
+  minReplicas: 1
+  maxReplicas: 6
+```
+
+Resolve the exact ALB ARN after the Ingress has created it, then verify the
+rendered Role before syncing:
+
+```bash
+aws elbv2 describe-load-balancers --names kubevista-dev \
+  --query 'LoadBalancers[0].LoadBalancerArn' --output text
+helm template kubevista platform/apps/dashboard --namespace kubevista \
+  --set operations.enabled=true \
+  --set-string operations.albSignerArn=<exact-alb-arn> \
+  | kubectl apply --dry-run=server --filename=-
+kubectl auth can-i patch deployments --namespace kubevista \
+  --as system:serviceaccount:kubevista:kubevista
+kubectl auth can-i update deployments/scale --namespace kubevista \
+  --as system:serviceaccount:kubevista:kubevista
+kubectl auth can-i patch deployments --namespace kube-system \
+  --as system:serviceaccount:kubevista:kubevista
+```
+
+The first two authorization checks should return `yes`; the `kube-system`
+check must return `no`. Confirm that restart and scale entries appear in API
+logs and the control-plane audit log. Disable the feature after the exercise if
+the environment no longer needs interactive operations.
+
+The review step produces a five-minute, single-use plan bound to the exact
+target, action, parameters, reason, and Kubernetes resource version. A changed,
+expired, or replayed plan must be reviewed again.
+
+Replica changes are point-in-time requests. If a Deployment is managed by a
+HorizontalPodAutoscaler, the HPA can subsequently reconcile the replica count.
+
 ## Teardown
 
 Teardown has to account for Kubernetes controllers and resources that are not

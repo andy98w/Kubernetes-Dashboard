@@ -18,7 +18,7 @@ by the Go API.
 
 ## Data contract and states
 
-The frontend consumes the following read-only contracts under `/api/v1`: `summary`,
+The frontend consumes the following inventory contracts under `/api/v1`: `summary`,
 `workloads`, workload detail, `network`, `events`, `incidents`, `observability`,
 `security`, `cost`, and `settings`. In cluster mode, `/api/v1/stream` carries
 server-sent Pod updates from a Kubernetes watch. The browser debounces those
@@ -28,6 +28,12 @@ recovery path. Manual refresh and last-known-good data are preserved.
 Selecting a workload opens a keyboard-accessible panel containing its Pods,
 images, Services, matching NetworkPolicies, and recent Events. The incident
 view groups related warning Events on a timeline.
+
+Deployments also expose an operation review inside the workload panel. Restart
+and scale are the only supported actions. The operator must provide a reason;
+the interface then displays the target, replica change, blast-radius note,
+dry-run result, and audit ID before enabling execution. Static builds run this
+flow as an explicitly labeled simulation.
 
 The platform-posture rows come from configuration; they are not runtime policy
 results. The security page checks Pod security contexts but does not enforce
@@ -70,8 +76,9 @@ capabilities in Kubernetes.
 `npm run build:demo` sets `VITE_DATA_MODE=demo` and bundles representative data
 from the August 31 EKS run. It does not need the API, AWS credentials, or a live
 cluster. The banner identifies it as a demo and links back to the deployment
-records. Workload drill-down and the disruption timeline still work in this
-build.
+records. Workload drill-down, the disruption timeline, and guarded-operation
+simulation still work in this build. Simulation receipts never imply that a
+live resource was changed.
 
 The root `vercel.json` selects this build, serves `web/dist`, and applies
 browser-hardening headers. The live container build continues to use the normal

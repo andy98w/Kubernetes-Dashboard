@@ -18,7 +18,8 @@ instead of leaving the repository as Terraform and YAML alone.
 - **Observability:** OpenTelemetry instrumentation and collectors, Prometheus,
   Grafana, Loki, and Tempo.
 - **Security:** private worker subnets, KMS envelope encryption, Secrets Manager
-  through External Secrets, Trivy scanning, read-only RBAC, NetworkPolicies,
+  through External Secrets, Trivy scanning, read-only-by-default RBAC,
+  opt-in namespace-scoped Deployment operations, NetworkPolicies,
   and restricted container security contexts. Kyverno is not installed.
 
 The dashboard chart defaults `networkPolicy.apiServerCidr` to the exact
@@ -39,9 +40,21 @@ long-running production setup would normally separate environments into AWS
 accounts, use one NAT gateway per Availability Zone, centralize audit logs, and
 define recovery objectives before adding multi-region complexity.
 
+## Guarded operation boundary
+
+The original August 31 AWS run used read-only access. The later operator
+workflow is implemented and testable in the static simulation, but has not been
+claimed as exercised against that torn-down cluster. In a future live run,
+`operations.enabled` must be reviewed explicitly. The browser cannot submit
+arbitrary Kubernetes objects: it can request only a Deployment rollout restart
+or a replica count inside the configured range, and the API performs a dry run
+before the real request. Review plans are bound to the exact request and
+resource version, expire after five minutes, and can be executed only once.
+
 ## Out of scope
 
-- The dashboard does not edit or delete Kubernetes resources.
+- Arbitrary manifest editing, Secret access, RBAC changes, pod exec, controller
+  deletion, and other unrestricted Kubernetes operations.
 - Service mesh is excluded until there is a concrete mTLS or traffic-management
   requirement; NetworkPolicies and the existing telemetry cover this test.
 - Vault is excluded because AWS Secrets Manager plus External Secrets avoids

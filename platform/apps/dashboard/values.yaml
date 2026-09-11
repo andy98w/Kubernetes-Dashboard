@@ -11,6 +11,12 @@ webImage:
 replicas: 2
 webReplicas: 2
 clusterName: kubevista-dev
+operations:
+  enabled: false
+  albSignerArn: ""
+  namespaces: [kubevista]
+  minReplicas: 1
+  maxReplicas: 6
 resources:
   requests: { cpu: 100m, memory: 128Mi }
   limits: { cpu: 500m, memory: 256Mi }

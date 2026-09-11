@@ -30,6 +30,31 @@ metadata:
 roleRef: { apiGroup: rbac.authorization.k8s.io, kind: ClusterRole, name: kubevista-reader }
 subjects: [{ kind: ServiceAccount, name: kubevista, namespace: "{{ .Release.Namespace }}" }]
 ---
+{{- if .Values.operations.enabled }}
+{{- range .Values.operations.namespaces }}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: kubevista-operator
+  namespace: {{ . | quote }}
+rules:
+  - apiGroups: ["apps"]
+    resources: ["deployments"]
+    verbs: ["get", "patch"]
+  - apiGroups: ["apps"]
+    resources: ["deployments/scale"]
+    verbs: ["get", "update"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: kubevista-operator
+  namespace: {{ . | quote }}
+roleRef: { apiGroup: rbac.authorization.k8s.io, kind: Role, name: kubevista-operator }
+subjects: [{ kind: ServiceAccount, name: kubevista, namespace: "{{ $.Release.Namespace }}" }]
+---
+{{- end }}
+{{- end }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -69,6 +94,13 @@ spec:
             - { name: KUBEVISTA_VERSION, value: "{{ .Chart.AppVersion }}" }
             - { name: KUBEVISTA_CLUSTER_NAME, value: {{ .Values.clusterName | quote }} }
             - { name: KUBEVISTA_DEMO_MODE, value: "false" }
+            - { name: KUBEVISTA_OPERATIONS_ENABLED, value: {{ .Values.operations.enabled | quote }} }
+            - { name: KUBEVISTA_OPERATION_NAMESPACES, value: {{ join "," .Values.operations.namespaces | quote }} }
+            - { name: KUBEVISTA_MIN_REPLICAS, value: {{ .Values.operations.minReplicas | quote }} }
+            - { name: KUBEVISTA_MAX_REPLICAS, value: {{ .Values.operations.maxReplicas | quote }} }
+            {{- if .Values.operations.enabled }}
+            - { name: KUBEVISTA_ALB_SIGNER_ARN, value: {{ required "operations.albSignerArn is required when guarded operations are enabled" .Values.operations.albSignerArn | quote }} }
+            {{- end }}
             - { name: KUBEVISTA_TRACE_SAMPLE_RATIO, value: {{ .Values.telemetry.traceSampleRatio | quote }} }
             - { name: OTEL_EXPORTER_OTLP_ENDPOINT, value: {{ .Values.telemetry.otlpEndpoint | quote }} }
           readinessProbe: { httpGet: { path: /readyz, port: http }, periodSeconds: 5 }

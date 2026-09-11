@@ -136,6 +136,19 @@ endpoint forwards Pod watch notifications so the React client can refresh the
 active view promptly. Readiness verifies Kubernetes API access with a
 three-second deadline. Local demo mode uses deterministic sample data.
 
+Guarded operations are a separate, disabled-by-default capability. Enabling the
+Helm `operations` block creates Roles only in the named namespaces. Those Roles
+permit `get`/`patch` on Deployments and `get`/`update` on the Deployment scale
+subresource. The API supports only rollout restart and bounded scaling, repeats
+the dry run immediately before execution, and rejects a stale resource version.
+Its review plan is request-bound, expires after five minutes, and is single-use.
+Accepted operations are written to structured application logs and the recent
+in-memory receipt feed; Kubernetes API auditing remains the durable authority in
+a live environment. Production execution also verifies the signature,
+expiration, and exact signer ARN in the ALB's `x-amzn-oidc-data` token before
+recording its `sub` claim as the actor; the unsigned legacy identity header is
+not trusted.
+
 Testing layers:
 
 - fake-client Kubernetes inventory unit tests;
