@@ -1,0 +1,28 @@
+name: Incident lab
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  kind:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with: {go-version: '1.26.x', cache-dependency-path: api/go.sum}
+      - uses: azure/setup-helm@v5
+      - run: go install sigs.k8s.io/kind@v0.30.0
+      - run: kind create cluster --name kubevista-ci --image kindest/node:v1.34.0 --wait 120s
+      - run: make build-cli
+      - run: bash scripts/test-incident-lab.sh
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: incident-lab-evidence
+          path: outputs/incident-lab/
+      - run: kind delete cluster --name kubevista-ci
+        if: always()

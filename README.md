@@ -2,7 +2,7 @@
 
 KubeVista is a Kubernetes operations dashboard backed by a Go API. It is
 read-only by default and includes an opt-in, guarded workflow for Deployment
-restarts and scaling. I built it to
+restarts, scaling, and rollback. I built it to
 work through the parts of running EKS that are easy to miss in a small demo:
 networking, IAM, GitOps, telemetry, image provenance, failure testing, and
 cleanup.
@@ -13,6 +13,12 @@ The public demo uses representative data from that run and clearly labels the
 cluster as offline.
 
 ## What is in the repository
+
+The [incident-response prototype](docs/incident-response.md) adds evidence-based
+diagnosis, correlated timelines, reviewed rollback, recovery checks, a Go CLI,
+and five reproducible failures. A lightweight local Helm chart and kind CI lab
+exercise the workflow without AWS. These additions are separate from the August
+EKS deployment results below.
 
 - Go API using Kubernetes `client-go`, read-only inventory RBAC, and an optional
   namespace-scoped operator role
@@ -89,6 +95,10 @@ Useful starting points:
 - [August 31 teardown record](docs/evidence/teardown-2026-08-31.md)
 
 ## Run locally
+
+For an actual failure and recovery exercise, follow the
+[local incident lab](docs/incident-lab.md). Workload details now explain supported
+pod failure signals with Kubernetes evidence and suggested next steps.
 
 Prerequisites are pinned in `.tool-versions`: Go 1.26, Node 24, Terraform,
 kubectl, and Helm.

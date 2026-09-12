@@ -87,14 +87,17 @@ func (d DemoInventory) PlanOperation(_ context.Context, request OperationRequest
 			return OperationPlan{}, &OperationError{"invalid_replicas", "replicas must be between 1 and 6"}
 		}
 		desired = *request.Replicas
-	} else if request.Action != OperationRestart {
+	} else if request.Action != OperationRestart && request.Action != OperationRollback {
 		return OperationPlan{}, &OperationError{"action_denied", "operation is not supported"}
 	}
 	impact := "Simulates a rolling restart without changing a cluster."
+	if request.Action == OperationRollback {
+		impact = "Simulates restoring a previous pod template without changing a cluster."
+	}
 	if request.Action == OperationScale {
 		impact = fmt.Sprintf("Simulates changing desired replicas from %d to %d within the 1–6 guardrail. A HorizontalPodAutoscaler, if present, may subsequently reconcile this value.", current, desired)
 	}
-	return OperationPlan{newOperationID(), request.Action, target(request), request.Reason, current, desired, impact, "demo-resource-version", true, true, true, time.Now().UTC()}, nil
+	return OperationPlan{ID: newOperationID(), Action: request.Action, Target: target(request), Reason: request.Reason, CurrentReplicas: current, DesiredReplicas: desired, Impact: impact, ResourceVersion: "demo-resource-version", Authorized: true, DryRun: true, Simulated: true, CreatedAt: time.Now().UTC()}, nil
 }
 
 func (d DemoInventory) ExecuteOperation(_ context.Context, request OperationRequest, actor string) (OperationRecord, error) {

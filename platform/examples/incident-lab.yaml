@@ -1,0 +1,38 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: kubevista-lab
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: probe-failure
+  namespace: kubevista-lab
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: probe-failure
+  template:
+    metadata:
+      labels:
+        app: probe-failure
+    spec:
+      containers:
+        - name: web
+          image: nginx:1.28-alpine
+          ports:
+            - containerPort: 80
+          readinessProbe:
+            httpGet:
+              path: /not-a-real-page
+              port: 80
+            periodSeconds: 3
+            failureThreshold: 1
+          resources:
+            requests:
+              cpu: 25m
+              memory: 32Mi
+            limits:
+              cpu: 100m
+              memory: 64Mi

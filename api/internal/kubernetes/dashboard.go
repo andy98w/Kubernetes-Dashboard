@@ -189,7 +189,14 @@ func workloadFromDeployment(d appsv1.Deployment) Workload {
 	if d.Spec.Replicas != nil {
 		desired = *d.Spec.Replicas
 	}
-	return Workload{"Deployment", d.Namespace, d.Name, d.Status.ReadyReplicas, desired, health(d.Status.ReadyReplicas, desired), d.CreationTimestamp.Time}
+	status := deploymentRecovery(&d).Status
+	if status == "Recovered" {
+		status = "Healthy"
+	}
+	if desired == 0 {
+		status = "Scaled down"
+	}
+	return Workload{"Deployment", d.Namespace, d.Name, d.Status.ReadyReplicas, desired, status, d.CreationTimestamp.Time}
 }
 
 func health(ready, desired int32) string {

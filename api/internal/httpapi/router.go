@@ -52,6 +52,13 @@ func New(cfg config.Config, inventory cluster.Inventory) http.Handler {
 			writeJSON(w, http.StatusNotFound, map[string]string{"error": "workload not found"})
 			return
 		}
+		if r.URL.Query().Get("evidence") == "true" {
+			if richer, ok := inventory.(interface {
+				Enrich(context.Context, *cluster.WorkloadDetail)
+			}); ok {
+				richer.Enrich(ctx, &value)
+			}
+		}
 		writeJSON(w, http.StatusOK, value)
 	})
 	mux.HandleFunc("GET /api/v1/network", func(w http.ResponseWriter, r *http.Request) { serveInventory(w, r, "network", inventory.Network) })

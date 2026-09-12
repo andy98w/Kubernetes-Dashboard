@@ -3,7 +3,7 @@
 test: test-api test-web
 
 test-api:
-	cd api && go test ./...
+	cd api && go test ./cmd/... ./internal/...
 
 test-web:
 	cd web && npm ci && npm run check
@@ -16,6 +16,13 @@ run-web:
 
 build-api:
 	cd api && CGO_ENABLED=0 go build -trimpath -o ../bin/kubevista-api ./cmd/server
+
+.PHONY: build-cli demo-incident
+build-cli:
+	cd api && go build -o ../bin/kubevista ./cmd/kubevista
+
+demo-incident:
+	bash scripts/incident-lab.sh "$(SCENARIO)"
 
 build-web:
 	cd web && npm ci && npm run build

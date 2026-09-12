@@ -1,0 +1,6 @@
+apiVersion: v2
+name: kubevista-local
+description: Small single-replica KubeVista installation for local evaluation
+type: application
+version: 0.1.0
+appVersion: "0.4.0-prototype"

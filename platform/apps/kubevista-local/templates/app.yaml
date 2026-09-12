@@ -1,0 +1,133 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ .Release.Name }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ .Release.Name }}-{{ .Release.Namespace }}-reader
+rules:
+  - apiGroups: [""]
+    resources: [nodes, namespaces, pods, pods/log, events, services]
+    verbs: [get, list, watch]
+  - apiGroups: [apps]
+    resources: [deployments, replicasets, statefulsets, daemonsets]
+    verbs: [get, list, watch]
+  - apiGroups: [batch]
+    resources: [jobs, cronjobs]
+    verbs: [get, list, watch]
+  - apiGroups: [networking.k8s.io]
+    resources: [ingresses, networkpolicies]
+    verbs: [get, list, watch]
+  - apiGroups: [discovery.k8s.io]
+    resources: [endpointslices]
+    verbs: [get, list]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ .Release.Name }}-{{ .Release.Namespace }}-reader
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ .Release.Name }}-{{ .Release.Namespace }}-reader
+subjects:
+  - kind: ServiceAccount
+    name: {{ .Release.Name }}
+    namespace: {{ .Release.Namespace }}
+---
+{{ if .Values.operations.enabled }}
+{{ range .Values.operations.namespaces }}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ $.Release.Name }}-operator
+  namespace: {{ . }}
+rules:
+  - apiGroups: [apps]
+    resources: [deployments]
+    verbs: [get, patch]
+  - apiGroups: [apps]
+    resources: [deployments/scale]
+    verbs: [get, update]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ $.Release.Name }}-operator
+  namespace: {{ . }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: {{ $.Release.Name }}-operator
+subjects:
+  - kind: ServiceAccount
+    name: {{ $.Release.Name }}
+    namespace: {{ $.Release.Namespace }}
+---
+{{ end }}
+{{ end }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kubevista-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app: kubevista-api}
+  template:
+    metadata:
+      labels: {app: kubevista-api}
+    spec:
+      serviceAccountName: {{ .Release.Name }}
+      containers:
+        - name: api
+          image: {{ .Values.apiImage | quote }}
+          imagePullPolicy: IfNotPresent
+          ports: [{containerPort: 8080}]
+          env:
+            - {name: KUBEVISTA_CLUSTER_NAME, value: local-evaluation}
+            - {name: KUBEVISTA_ENVIRONMENT, value: development}
+            - {name: KUBEVISTA_OPERATIONS_ENABLED, value: {{ .Values.operations.enabled | quote }}}
+            - {name: KUBEVISTA_OPERATION_NAMESPACES, value: {{ join "," .Values.operations.namespaces | quote }}}
+            - {name: KUBEVISTA_PROMETHEUS_URL, value: {{ .Values.prometheusURL | quote }}}
+          readinessProbe: {httpGet: {path: /readyz, port: 8080}}
+          resources:
+            requests: {cpu: 25m, memory: 64Mi}
+            limits: {cpu: 500m, memory: 256Mi}
+---
+apiVersion: v1
+kind: Service
+metadata: {name: kubevista-api}
+spec:
+  selector: {app: kubevista-api}
+  ports: [{port: 80, targetPort: 8080}]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: kubevista-web}
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app: kubevista-web}
+  template:
+    metadata:
+      labels: {app: kubevista-web}
+    spec:
+      automountServiceAccountToken: false
+      containers:
+        - name: web
+          image: {{ .Values.webImage | quote }}
+          imagePullPolicy: IfNotPresent
+          ports: [{containerPort: 8080}]
+          resources:
+            requests: {cpu: 25m, memory: 32Mi}
+            limits: {cpu: 200m, memory: 96Mi}
+---
+apiVersion: v1
+kind: Service
+metadata: {name: kubevista-web}
+spec:
+  selector: {app: kubevista-web}
+  ports: [{port: 80, targetPort: 8080}]

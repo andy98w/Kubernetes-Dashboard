@@ -1,0 +1,10 @@
+apiImage: kubevista-api:lab
+webImage: kubevista-web:lab
+operations:
+  enabled: false
+  namespaces: [kubevista-lab]
+# Optional cluster-wide node patch permission is a separate operator role.
+# It is never bound to the KubeVista web service account.
+nodeOperator:
+  enabled: false
+prometheusURL: ""
