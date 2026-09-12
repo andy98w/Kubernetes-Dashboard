@@ -38,6 +38,8 @@ render() {
 }
 
 helm lint "${repository_root}/platform/apps/dashboard"
+helm lint "${repository_root}/platform/apps/kubevista-local"
+helm template kubevista "${repository_root}/platform/apps/kubevista-local" --namespace kubevista-system --set operations.enabled=true --set nodeOperator.enabled=true >/dev/null
 helm lint "${repository_root}/platform/apps/platform-config"
 render 10-aws-load-balancer-controller aws-load-balancer-controller eks/aws-load-balancer-controller 3.5.0 kube-system
 render 11-external-secrets external-secrets external-secrets/external-secrets 2.10.0 external-secrets

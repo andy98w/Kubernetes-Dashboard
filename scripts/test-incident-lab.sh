@@ -28,6 +28,10 @@ for scenario in probe crashloop imagepull scheduling oom; do
   done
   [[ "$found" == true ]] || { "${k[@]}" -n kubevista-lab get pods;exit 1; }
   diagnosed=$(date +%s)
+  if [[ "$scenario" == crashloop ]]; then
+    bin/kubevista diagnose "${base[@]}" --evidence >outputs/incident-lab/crashloop-enriched.json
+    jq -e '.logs|any(.text|contains("injected-crash"))' outputs/incident-lab/crashloop-enriched.json >/dev/null
+  fi
   # Kubernetes controllers may update resourceVersion during review; retry a new
   # review, never reuse a consumed or stale plan.
   accepted=false
@@ -43,6 +47,11 @@ for scenario in probe crashloop imagepull scheduling oom; do
   # A reviewed plan is single use, even after recovery.
   if bin/kubevista execute --api "$api" --plan "outputs/incident-lab/$scenario-plan.json" >outputs/incident-lab/replay.json 2>&1; then exit 1;fi
 done
+# A change after review must invalidate the plan on an actual API server too.
+bin/kubevista plan "${base[@]}" --action restart --reason "Verify concurrent change rejection" >outputs/incident-lab/stale-plan.json
+"${k[@]}" -n kubevista-lab annotate deployment probe-failure kubevista.dev/concurrent-change="$(date +%s)" --overwrite
+if bin/kubevista execute --api "$api" --plan outputs/incident-lab/stale-plan.json >outputs/incident-lab/stale-denied.json 2>&1; then exit 1;fi
+grep -q stale_plan outputs/incident-lab/stale-denied.json
 if bin/kubevista plan --api "$api" --namespace kube-system --name coredns --action restart --reason "Verify namespace restriction" >outputs/incident-lab/namespace-denied.json 2>&1; then exit 1;fi
 if bin/kubevista plan "${base[@]}" --action scale --replicas 99 --reason "Verify replica guardrail" >outputs/incident-lab/replicas-denied.json 2>&1; then exit 1;fi
 [[ $("${k[@]}" auth can-i patch nodes --as=system:serviceaccount:kubevista-system:kubevista) == no ]]

@@ -102,6 +102,9 @@ after an incident; this prototype does not pause Argo CD.
 
 ## Evidence and measurements
 
+The first complete run and its measured timings are recorded in
+[incident-lab-results.md](incident-lab-results.md).
+
 Workload evidence follows Deployment → owned ReplicaSets → owned pods, including
 label expressions. The timeline combines controller conditions, pod transitions,
 namespace events, and recent accepted operator receipts. Missing sources are

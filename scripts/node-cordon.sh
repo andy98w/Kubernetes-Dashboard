@@ -22,7 +22,7 @@ patch=$(jq -c '[{op:"test",path:"/metadata/uid",value:.uid},{op:"test",path:"/me
 "${k[@]}" patch node "$node" --type=json -p "$patch" --dry-run=server >/dev/null
 if [[ "$mode" == execute ]]; then
   "${k[@]}" patch node "$node" --type=json -p "$patch" >/dev/null
-  jq '.+{status:"Accepted",actor:"kubevista-node-operator",note:"Cordon changes scheduling only; it does not drain or evict pods."}' <<<"$plan"
+  jq '.+{dryRun:false,status:"Accepted",actor:"kubevista-node-operator",note:"Cordon changes scheduling only; it does not drain or evict pods."}' <<<"$plan"
 else
   jq '.+{dryRun:true}' <<<"$plan"
 fi

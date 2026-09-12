@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"sort"
 	"strconv"
 	"time"
 
@@ -29,6 +30,9 @@ type MetricSample struct {
 
 // Enrich is opt-in so opening a workload does not automatically retrieve logs.
 func (c *Client) Enrich(ctx context.Context, detail *WorkloadDetail) {
+	defer func() {
+		sort.SliceStable(detail.Timeline, func(i, j int) bool { return detail.Timeline[i].At.Before(detail.Timeline[j].At) })
+	}()
 	for _, p := range detail.Pods {
 		if len(detail.Logs) >= 3 {
 			break

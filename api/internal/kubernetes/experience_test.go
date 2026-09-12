@@ -43,3 +43,26 @@ func TestIncidentsCorrelatesWarningEvents(t *testing.T) {
 }
 
 func ptr[T any](value T) *T { return &value }
+
+func TestDeploymentEvidenceUsesOwnershipAndLabelExpressions(t *testing.T) {
+	owner := []metav1.OwnerReference{{Kind: "Deployment", Name: "api", UID: "d1", Controller: ptr(true)}}
+	podOwner := []metav1.OwnerReference{{Kind: "ReplicaSet", Name: "api-rs", UID: "r1", Controller: ptr(true)}}
+	d := &appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{Name: "api", Namespace: "platform", UID: "d1"}, Spec: appsv1.DeploymentSpec{Selector: &metav1.LabelSelector{MatchExpressions: []metav1.LabelSelectorRequirement{{Key: "app", Operator: metav1.LabelSelectorOpIn, Values: []string{"api"}}}}}}
+	rs := &appsv1.ReplicaSet{ObjectMeta: metav1.ObjectMeta{Name: "api-rs", Namespace: "platform", UID: "r1", OwnerReferences: owner}}
+	pod := &corev1.Pod{ObjectMeta: metav1.ObjectMeta{Name: "owned", Namespace: "platform", UID: "p1", Labels: map[string]string{"app": "api"}, OwnerReferences: podOwner}}
+	stranger := pod.DeepCopy()
+	stranger.Name, stranger.UID, stranger.OwnerReferences = "stranger", "p2", nil
+	stranger.Status.ContainerStatuses = []corev1.ContainerStatus{{State: corev1.ContainerState{Waiting: &corev1.ContainerStateWaiting{Reason: "CrashLoopBackOff"}}}}
+	wrongLabel := pod.DeepCopy()
+	wrongLabel.Name, wrongLabel.UID = "wrong-label", "p3"
+	wrongLabel.Labels = map[string]string{"app": "other"}
+	oldEvent := &corev1.Event{ObjectMeta: metav1.ObjectMeta{Name: "old-pod-event", Namespace: "platform"}, Type: "Warning", Reason: "Unhealthy", Message: "readiness probe failed", InvolvedObject: corev1.ObjectReference{Kind: "Pod", Name: "owned", UID: "old-pod-uid"}}
+	c := NewClient(fake.NewSimpleClientset(d, rs, pod, stranger, wrongLabel, oldEvent), "test")
+	detail, err := c.WorkloadDetail(context.Background(), "platform", "Deployment", "api")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(detail.Pods) != 1 || detail.Pods[0].Name != "owned" || len(detail.Diagnoses) != 0 || len(detail.Events) != 0 {
+		t.Fatalf("unrelated evidence leaked into workload: %+v", detail)
+	}
+}
