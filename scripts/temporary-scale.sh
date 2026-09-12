@@ -11,12 +11,14 @@ cli=(bin/kubevista)
 base=(--api "$api" --namespace "$namespace" --name "$name")
 "${cli[@]}" diagnose "${base[@]}" >"$scratch/before.json"
 before=$(jq -r .workload.desired "$scratch/before.json")
+uid=$(jq -r .uid "$scratch/before.json")
+generation=$(jq -r .recovery.generation "$scratch/before.json")
+[[ "$uid" != null && -n "$uid" && "$generation" =~ ^[0-9]+$ ]] || { echo "Missing Deployment identity; refusing temporary scale" >&2;exit 1; }
+# Predict only our spec change. Do not adopt a concurrent generation observed
+# after execution, because that could authorize restoring over someone else.
+if [[ "$before" != "$replicas" ]]; then generation=$((generation+1));fi
 "${cli[@]}" plan "${base[@]}" --action scale --replicas "$replicas" --reason "Temporary capacity for ${duration}s; restore to ${before}" >"$scratch/scale.json"
 # Invocation explicitly requests both changes; plans are kept for inspection.
-"${cli[@]}" execute --api "$api" --plan "$scratch/scale.json"
-"${cli[@]}" diagnose "${base[@]}" >"$scratch/scaled.json"
-generation=$(jq -r .recovery.generation "$scratch/scaled.json")
-uid=$(jq -r .uid "$scratch/scaled.json")
 restore() {
   trap - EXIT INT TERM
   "${cli[@]}" diagnose "${base[@]}" >"$scratch/current.json" || { echo "Cannot restore; inspect $scratch and restore manually" >&2;return 1; }
@@ -29,4 +31,5 @@ restore() {
 trap restore EXIT
 trap 'exit 130' INT
 trap 'exit 143' TERM
+"${cli[@]}" execute --api "$api" --plan "$scratch/scale.json"
 sleep "$duration"
