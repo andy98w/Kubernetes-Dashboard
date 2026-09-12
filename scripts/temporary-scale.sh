@@ -21,11 +21,13 @@ if [[ "$before" != "$replicas" ]]; then generation=$((generation+1));fi
 # Invocation explicitly requests both changes; plans are kept for inspection.
 restore() {
   trap - EXIT INT TERM
+  "${cli[@]}" plan "${base[@]}" --action scale --replicas "$before" --reason "Restore capacity after temporary scale" >"$scratch/restore.json" || { echo "Cannot review restoration; inspect $scratch" >&2;return 1; }
+  # Check identity/generation after review. Changes after this check are then
+  # rejected by the reviewed plan's resource-version precondition.
   "${cli[@]}" diagnose "${base[@]}" >"$scratch/current.json" || { echo "Cannot restore; inspect $scratch and restore manually" >&2;return 1; }
   if ! jq -e --arg uid "$uid" --argjson generation "$generation" --argjson replicas "$replicas" '.uid==$uid and .recovery.generation==$generation and .workload.desired==$replicas' "$scratch/current.json" >/dev/null; then
     echo "Deployment changed during temporary scale; restoration skipped. Review $scratch" >&2;return 1
   fi
-  "${cli[@]}" plan "${base[@]}" --action scale --replicas "$before" --reason "Restore capacity after temporary scale" >"$scratch/restore.json"
   "${cli[@]}" execute --api "$api" --plan "$scratch/restore.json"
 }
 trap restore EXIT
