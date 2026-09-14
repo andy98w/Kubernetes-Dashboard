@@ -1,7 +1,7 @@
 name: Safe release lab
 on:
   push:
-    branches: [codex/safe-releases]
+    branches: [main, codex/safe-releases]
   pull_request:
   workflow_dispatch:
 permissions:

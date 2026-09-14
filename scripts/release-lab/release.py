@@ -16,7 +16,7 @@ for _ in range(20):
  try:
   with urllib.request.urlopen('http://TARGET:8080/',timeout=2) as response: status=response.status; body=response.read().decode()
  except urllib.error.HTTPError as error: status=error.code; body=error.read().decode()
- except Exception: status=0; body='' 
+ except Exception: status=0; body=''
  samples.append({'status':status,'seconds':time.monotonic()-start,'body':body})
 print(json.dumps(samples))
 '''
