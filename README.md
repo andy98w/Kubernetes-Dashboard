@@ -151,3 +151,10 @@ Ideas I have not implemented yet:
 - a Cilium/Hubble profile for network-flow inspection;
 - admission-time signature checks with Kyverno;
 - longer soak tests and node/AZ disruption scenarios.
+
+### Release safety lab
+
+The [safe release lab](docs/safe-releases.md) validates a candidate against HTTP
+error and latency thresholds, promotes with guarded Service changes, and restores
+stable routing when post-promotion checks fail. It runs in disposable kind and
+publishes measured CI evidence; it is not a production deployment controller.

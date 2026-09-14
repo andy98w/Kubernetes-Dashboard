@@ -1,0 +1,29 @@
+name: Safe release lab
+on:
+  push:
+    branches: [main, codex/safe-releases]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with: {go-version: '1.26.x', cache-dependency-path: api/go.sum}
+      - run: python3 -m unittest discover -s scripts/release-lab -p 'test_*.py'
+      - run: go install sigs.k8s.io/kind@v0.30.0
+      - run: kind create cluster --name kubevista-release-ci --image kindest/node:v1.34.0 --wait 120s
+      - run: docker build -t kubevista-release:lab scripts/release-lab
+      - run: kind load docker-image kubevista-release:lab --name kubevista-release-ci
+      - run: python3 scripts/release-lab/release.py --context kind-kubevista-release-ci
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: safe-release-evidence
+          path: outputs/release-lab/
+      - run: kind delete cluster --name kubevista-release-ci
+        if: always()
