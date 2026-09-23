@@ -25,7 +25,35 @@ type status struct {
 
 func New(cfg config.Config, inventory cluster.Inventory) http.Handler {
 	mux := http.NewServeMux()
+	mux.HandleFunc("GET /api/v1/delivery", func(w http.ResponseWriter, r *http.Request) {
+		if source, ok := inventory.(interface {
+			Delivery(context.Context) (cluster.Delivery, error)
+		}); ok {
+			serveInventory(w, r, "delivery", source.Delivery)
+			return
+		}
+		writeJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "delivery observations unavailable"})
+	})
+	mux.HandleFunc("GET /api/v1/topology", func(w http.ResponseWriter, r *http.Request) {
+		if source, ok := inventory.(interface {
+			Topology(context.Context) (cluster.Topology, error)
+		}); ok {
+			serveInventory(w, r, "topology", source.Topology)
+			return
+		}
+		writeJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "topology unavailable"})
+	})
+	mux.HandleFunc("GET /api/v1/station-health", func(w http.ResponseWriter, r *http.Request) {
+		if source, ok := inventory.(interface {
+			StationHealth(context.Context) (cluster.StationHealth, error)
+		}); ok {
+			serveInventory(w, r, "station-health", source.StationHealth)
+			return
+		}
+		writeJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "station health unavailable"})
+	})
 	claimsVerifier := newALBClaimsVerifier(cfg.ALBSignerARN, cfg.AWSRegion)
+	mux.HandleFunc("POST /api/v1/investigate/{namespace}/{kind}/{name}", investigationHandler(cfg, inventory))
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, _ *http.Request) {
 		writeJSON(w, http.StatusOK, status{"ok", cfg.Version, cfg.Environment, time.Now().UTC().Format(time.RFC3339)})
 	})

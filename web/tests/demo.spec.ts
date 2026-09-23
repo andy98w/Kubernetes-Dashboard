@@ -2,15 +2,15 @@ import { expect, test } from '@playwright/test'
 
 test('labels the offline dataset honestly', async ({ page }) => {
   await page.goto('/#/overview')
-  const demoBanner = page.locator('.demo-banner')
-  await expect(demoBanner.getByText('Demo data', { exact: true })).toBeVisible()
-  await expect(demoBanner.getByText(/cluster has since been shut down/i)).toBeVisible()
-  await expect(demoBanner.getByRole('link', { name: /view deployment notes/i })).toHaveAttribute('href', /github\.com\/andy98w\/Kubernetes-Dashboard/)
+  await expect(page.locator('.connection-pill')).toHaveText('Demo data')
+  await expect(page.locator('.demo-banner')).toHaveCount(0)
   await expect(page.getByText('Soon', { exact: true })).toHaveCount(0)
 })
 
 test('drills from a workload into correlated operational state', async ({ page }) => {
   await page.goto('/#/workloads')
+  await page.getByText('View & lab',{exact:true}).click()
+  await page.getByRole('button', { name: 'Tables', exact: true }).click()
   await page.getByRole('row').filter({ hasText: 'kubevista-api' }).click()
 
   const drawer = page.getByRole('dialog', { name: /kubevista-api workload details/i })
@@ -35,5 +35,5 @@ test('does not overflow the viewport at supported breakpoints', async ({ page })
   await page.goto('/#/workloads')
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth)
   expect(overflow).toBe(false)
-  await expect(page.getByRole('heading', { name: 'Workloads' })).toBeVisible()
+  await expect(page.locator('.station-world')).toBeVisible()
 })

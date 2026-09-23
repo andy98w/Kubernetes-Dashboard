@@ -3,8 +3,14 @@ import {expect,test} from '@playwright/test'
 for (const [scenario,code] of [['probe','ProbeFailed'],['crashloop','CrashLoopBackOff'],['imagepull','ImagePullBackOff'],['oom','OOMKilled'],['scheduling','Unschedulable']]) {
  test(`diagnoses and recovers simulated ${scenario}`,async({page})=>{
   await page.goto('/#/workloads')
-  await page.getByLabel('Failure scenario').selectOption(scenario)
+  await page.getByText('View & lab', {exact:true}).click()
+ await page.getByText('Simulation lab', {exact:true}).click()
+  await page.getByRole('button', {name:'Tables',exact:true}).click()
+  await page.locator('.scenario-picker summary').click()
+  await page.locator(`input[name="failure-scenario"][value="${scenario}"]`).check()
+  await page.locator('.scenario-picker summary').click()
   await page.getByRole('button',{name:'Inject simulated failure'}).click()
+ await page.getByText('View & lab', {exact:true}).click()
   await page.getByRole('row').filter({hasText:'probe-failure'}).click()
   const drawer=page.getByRole('dialog',{name:'probe-failure workload details'})
   await expect(drawer.getByRole('heading',{name:code,exact:true})).toBeVisible()
@@ -24,7 +30,11 @@ for (const [scenario,code] of [['probe','ProbeFailed'],['crashloop','CrashLoopBa
 
 test('a restart does not pretend to fix the broken probe',async({page})=>{
  await page.goto('/#/workloads')
+ await page.getByText('View & lab', {exact:true}).click()
+ await page.getByText('Simulation lab', {exact:true}).click()
+ await page.getByRole('button', {name:'Tables',exact:true}).click()
  await page.getByRole('button',{name:'Inject simulated failure'}).click()
+ await page.getByText('View & lab', {exact:true}).click()
  await page.getByRole('row').filter({hasText:'probe-failure'}).click()
  const drawer=page.getByRole('dialog',{name:'probe-failure workload details'})
  await drawer.getByRole('button',{name:'Restart rollout Recreate pods through the current strategy'}).click()

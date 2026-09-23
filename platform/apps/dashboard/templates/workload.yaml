@@ -10,6 +10,13 @@ kind: ClusterRole
 metadata:
   name: kubevista-reader
 rules:
+  {{- if .Values.topologyRBACDiscovery }}
+  - apiGroups: ["rbac.authorization.k8s.io"]
+    resources: ["roles", "clusterroles", "rolebindings", "clusterrolebindings"]
+    verbs: ["list"]
+  {{- end }}
+  - nonResourceURLs: ["/readyz"]
+    verbs: ["get"]
   - apiGroups: [""]
     resources: ["nodes", "namespaces", "pods", "pods/log", "events", "services"]
     verbs: ["get", "list", "watch"]
@@ -97,6 +104,8 @@ spec:
             - { name: KUBEVISTA_VERSION, value: "{{ .Chart.AppVersion }}" }
             - { name: KUBEVISTA_CLUSTER_NAME, value: {{ .Values.clusterName | quote }} }
             - { name: KUBEVISTA_DEMO_MODE, value: "false" }
+            - { name: KUBEVISTA_ARGO_DELIVERY, value: {{ .Values.deliveryArgo | quote }} }
+            - { name: KUBEVISTA_GITHUB_DELIVERY, value: {{ .Values.deliveryGitHub | quote }} }
             - { name: KUBEVISTA_OPERATIONS_ENABLED, value: {{ .Values.operations.enabled | quote }} }
             - { name: KUBEVISTA_OPERATION_NAMESPACES, value: {{ join "," .Values.operations.namespaces | quote }} }
             - { name: KUBEVISTA_MIN_REPLICAS, value: {{ .Values.operations.minReplicas | quote }} }

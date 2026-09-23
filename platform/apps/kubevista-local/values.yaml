@@ -1,8 +1,12 @@
 apiImage: kubevista-api:lab
 webImage: kubevista-web:lab
+apiReplicas: 1
 operations:
   enabled: false
   namespaces: [kubevista-lab]
+  durable: false
+  storeNamespace: kubevista-operations
+  activeActive: false
 # Optional cluster-wide node patch permission is a separate operator role.
 # It is never bound to the KubeVista web service account.
 nodeOperator:

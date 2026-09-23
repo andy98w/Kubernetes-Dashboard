@@ -58,6 +58,7 @@ type Client struct {
 	operations  operationPolicy
 	audit       *operationAudit
 	plans       *operationPlans
+	durable     *durableController
 }
 
 func New(cfg config.Config) (Inventory, error) {
@@ -76,7 +77,11 @@ func New(cfg config.Config) (Inventory, error) {
 	if err != nil {
 		return nil, fmt.Errorf("create Kubernetes client: %w", err)
 	}
-	return NewClientWithOperations(client, cfg.ClusterName, cfg.OperationsEnabled, cfg.OperationNamespaces, cfg.MinReplicas, cfg.MaxReplicas), nil
+	c := NewClientWithOperations(client, cfg.ClusterName, cfg.OperationsEnabled, cfg.OperationNamespaces, cfg.MinReplicas, cfg.MaxReplicas)
+	if cfg.DurableOperations {
+		c.enableDurable(cfg.OperationStoreNamespace, cfg.ControllerID, cfg.ControllerActiveActive)
+	}
+	return c, nil
 }
 
 func NewClient(client kubernetes.Interface, clusterName string) *Client {

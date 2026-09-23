@@ -1,0 +1,26 @@
+name: Promote staging release to production
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: production-promotion
+  cancel-in-progress: false
+jobs:
+  promote:
+    if: github.ref == 'refs/heads/main'
+    environment: kubevista-production
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      actions: write
+    steps:
+      - uses: actions/checkout@v7
+        with: {ref: main}
+      - name: Copy reviewed staging digests without rebuilding
+        run: python3 scripts/delivery/promote.py production
+      - name: Open production promotion PR
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash scripts/delivery/open-pr.sh production

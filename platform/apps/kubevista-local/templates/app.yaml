@@ -8,6 +8,8 @@ kind: ClusterRole
 metadata:
   name: {{ .Release.Name }}-{{ .Release.Namespace }}-reader
 rules:
+  - nonResourceURLs: ["/readyz"]
+    verbs: ["get"]
   - apiGroups: [""]
     resources: [nodes, namespaces, pods, pods/log, events, services]
     verbs: [get, list, watch]
@@ -73,7 +75,7 @@ kind: Deployment
 metadata:
   name: kubevista-api
 spec:
-  replicas: 1
+  replicas: {{ .Values.apiReplicas }}
   selector:
     matchLabels: {app: kubevista-api}
   template:
@@ -91,6 +93,11 @@ spec:
             - {name: KUBEVISTA_ENVIRONMENT, value: development}
             - {name: KUBEVISTA_OPERATIONS_ENABLED, value: {{ .Values.operations.enabled | quote }}}
             - {name: KUBEVISTA_OPERATION_NAMESPACES, value: {{ join "," .Values.operations.namespaces | quote }}}
+            - {name: KUBEVISTA_DURABLE_OPERATIONS, value: {{ .Values.operations.durable | quote }}}
+            - {name: KUBEVISTA_OPERATION_STORE_NAMESPACE, value: {{ .Values.operations.storeNamespace | quote }}}
+            - {name: KUBEVISTA_CONTROLLER_ACTIVE_ACTIVE, value: {{ .Values.operations.activeActive | quote }}}
+            - name: KUBEVISTA_CONTROLLER_ID
+              valueFrom: {fieldRef: {fieldPath: metadata.name}}
             - {name: KUBEVISTA_PROMETHEUS_URL, value: {{ .Values.prometheusURL | quote }}}
           readinessProbe: {httpGet: {path: /readyz, port: 8080}}
           resources:

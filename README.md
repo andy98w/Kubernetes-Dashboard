@@ -90,6 +90,8 @@ Useful starting points:
 - [AWS and Kubernetes stack](docs/platform-stack.md)
 - [Deployment guide](docs/deployment.md)
 - [Operations and teardown runbook](docs/runbook.md)
+- [Durable operations: state, claims, reconciliation, and failover tests](docs/durable-operations.md)
+- [Station interface: pod robots, resource inspections, and data boundaries](docs/habitat.md)
 - [Container supply chain](docs/supply-chain.md)
 - [August 31 deployment record](docs/evidence/live-eks-2026-08-31.md)
 - [August 31 teardown record](docs/evidence/teardown-2026-08-31.md)
@@ -153,6 +155,12 @@ Ideas I have not implemented yet:
 - longer soak tests and node/AZ disruption scenarios.
 
 ### Release safety lab
+
+The [continuous-delivery setup](docs/continuous-delivery.md) adds CI-gated image
+publishing, digest promotion PRs, opt-in Argo staging/production applications and
+a station release rehearsal. This new path has been checked locally, not run
+end to end against a live AWS environment. The activation checklist covers the
+GitHub approvals, cluster registration and network settings still needed.
 
 The [safe release lab](docs/safe-releases.md) validates a candidate against HTTP
 error and latency thresholds, promotes with guarded Service changes, and restores

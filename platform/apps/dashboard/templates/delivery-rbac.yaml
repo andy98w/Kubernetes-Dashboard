@@ -1,0 +1,16 @@
+{{- if .Values.deliveryArgo }}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata: {name: kubevista-delivery-reader, namespace: argocd}
+rules:
+  - apiGroups: [argoproj.io]
+    resources: [applications]
+    resourceNames: [kubevista-dashboard]
+    verbs: [get]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata: {name: kubevista-delivery-reader, namespace: argocd}
+roleRef: {apiGroup: rbac.authorization.k8s.io, kind: Role, name: kubevista-delivery-reader}
+subjects: [{kind: ServiceAccount, name: kubevista, namespace: {{ .Release.Namespace | quote }}}]
+{{- end }}
