@@ -6,6 +6,8 @@
 .map-options>summary,.view-options>summary{cursor:pointer;padding:10px 14px;background:#263e54ee;border:1px solid #506a80;border-radius:18px;list-style:none}
 .map-options[open],.view-options[open]{width:min(330px,calc(100% - 24px));background:#1c3047f5;border:1px solid #506a80;border-radius:14px;padding:8px;box-shadow:0 8px 30px #0a152666}
 .view-options[open]{right:12px;z-index:9}
+.map-options[open]{width:auto;padding:0;border:0;border-radius:0;background:transparent;box-shadow:none}
+.station-shell .map-options[open]>.station-toolbar{position:absolute;top:calc(100% + 8px);right:0;width:min(330px,calc(100vw - var(--rail) - 24px));box-sizing:border-box;background:#1c3047f5;border:1px solid #506a80;border-radius:14px;box-shadow:0 8px 30px #0a152666}
 .station-shell .view-options .hab-switch{position:static;margin:10px 0;box-shadow:none}
 .station-shell .view-options .lab-controls{display:flex;flex-direction:column;align-items:stretch}
 .station-shell .view-options .station-lab{padding:0 8px;max-height:50vh;overflow:auto}
