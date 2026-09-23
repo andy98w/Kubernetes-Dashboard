@@ -26,7 +26,12 @@ for scenario in probe crashloop imagepull scheduling oom; do
     if jq -e --arg code "$code" '.diagnoses|any(.code==$code)' "outputs/incident-lab/$scenario-diagnosis.json" >/dev/null; then found=true;break;fi
     sleep 2
   done
-  [[ "$found" == true ]] || { "${k[@]}" -n kubevista-lab get pods;exit 1; }
+  if [[ "$found" != true ]]; then
+    "${k[@]}" -n kubevista-lab get pods -o json >"outputs/incident-lab/$scenario-pods.json"
+    "${k[@]}" -n kubevista-lab describe pods >"outputs/incident-lab/$scenario-pod-details.txt"
+    "${k[@]}" -n kubevista-lab get pods
+    exit 1
+  fi
   diagnosed=$(date +%s)
   if [[ "$scenario" == crashloop ]]; then
     bin/kubevista diagnose "${base[@]}" --evidence >outputs/incident-lab/crashloop-enriched.json
