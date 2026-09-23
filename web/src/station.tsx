@@ -3,6 +3,7 @@ import './station.css'
 import {useTopology} from './topology-data'
 import {BoundaryControls,BoundaryObjects,type Layer} from './station-boundaries'
 import {StationFloor,nodeOrigin,project,floorPlan} from './station-floor'
+import {NodeDecor} from './station-decor'
 import {angledConnection,floorConnection} from './station-connections'
 import {DeliveryStation} from './delivery-station'
 import {RobotWork,workRole,workDescription,type WorkRole} from './robot-work'
@@ -137,7 +138,6 @@ export function Station({residents,events,simulated,loading,errors,truncated,onO
         <g transform="scale(1.45)" data-object="room" className="station-object" role="button" tabIndex={0} aria-label={`${roomInfo.title}: ${roomInfo.description}`} onMouseEnter={()=>setInfo(roomInfo)} onFocus={()=>setInfo(roomInfo)} onClick={()=>setInfo(roomInfo)} onKeyDown={e=>activate(e,()=>setInfo(roomInfo))}>
           <path d="M-155 75 0-3l155 78L0 153Z" fill="transparent"/>
           <text y="-93" textAnchor="middle" className="station-room-label">{room.node?`Node ${room.index+1}`:'Waiting bay'}{attention?'  ⚠':''}</text><text y="200" textAnchor="middle" className="station-count">{room.pods.length} pods{attention?` / ${attention} need attention`:''}</text>
-          <path d="m-119 48 23-12 23 12v29l-23 12-23-12Z" fill="#253e54" stroke="#9cb2bc"/><path d="m-110 54 12 6m-12 2 12 6m-12 2 12 6" stroke="#b3dcd6" strokeWidth="2"/>
         </g>
         <g aria-hidden="true" pointerEvents="none">
           <path d="m-20-15-84 42v30l84-42Z" fill="#19374d" stroke="#89a8b6" strokeWidth="2"/>
@@ -145,9 +145,8 @@ export function Station({residents,events,simulated,loading,errors,truncated,onO
           <path d="m132 31 67 34v25l-67-34Z" fill="#20384d" stroke="#789eaf"/>
           <path d="m140 43 47 24m-47-14 29 15" stroke="#9cc9bb" strokeWidth="2"/>
           <path d="m-16-33-168 84m191-91 53 27m38 19 115 57" className="station-room-light" fill="none" strokeWidth="3"/>
-          <path d="m-181 105 20-10 22 11v35l-20 10-22-11Z" fill="#28475b" stroke="#90a8ae"/>
-          <path d="m-175 114 11 6m-11 3 11 6m-11 3 11 6" stroke="#a4c4c2" strokeWidth="2"/>
         </g>
+        <g transform={`scale(${1/room.size})`}><NodeDecor index={room.index}/></g>
         {visible.map((pod,i)=><g key={`${pod.workload.namespace}/${pod.name}`} data-object="robot" role="button" tabIndex={0} className="station-bot-target" opacity={daemonFocus?workloadKey(pod.workload)===daemonFocus?1:.18:activeNamespace&&pod.workload.namespace!==activeNamespace||highlight&&!pod.workload.name.toLowerCase().includes(highlight.toLowerCase().replace('otel ','otel-'))?.18:1} aria-label={`${pod.name}, namespace ${pod.workload.namespace}, ${pod.workload.kind}: ${labels[mood(pod)]}. Open ${pod.workload.name}`} transform={`translate(${(i%3-Math.floor(i/3))*64} ${58+(i%3+Math.floor(i/3))*32})`} onMouseEnter={()=>describe(pod)} onMouseLeave={()=>setDaemonFocus(null)} onFocus={()=>describe(pod)} onBlur={()=>setDaemonFocus(null)} onClick={()=>onOpen(pod.workload)} onKeyDown={e=>activate(e,()=>onOpen(pod.workload))} style={{'--walk-delay':`${-i*1.7}s`} as CSSProperties}><title>{pod.name} — {labels[mood(pod)]}</title><circle cy="-20" r="29" className="station-hit"/><ellipse cy="5" rx="22" ry="9" fill="none" stroke={namespaceColor(pod.workload.namespace)} strokeWidth="3"/><g className="robot-nametag" aria-hidden="true"><rect x="-66" y="-83" width="132" height="19" rx="5" fill="#152a40" stroke={namespaceColor(pod.workload.namespace)}/><text y="-70" textAnchor="middle">{pod.workload.name.length>21?pod.workload.name.slice(0,19)+'…':pod.workload.name}</text></g><Robot state={mood(pod)} accent={namespaceColor(pod.workload.namespace)} daemon={pod.workload.kind==='DaemonSet'} role={workRole(pod.workload.name)} simulated={simulated} identity={`${pod.workload.namespace}/${pod.name}`}/></g>)}
         {visible.map((pod,i)=><g key={pod.name+'-identity'} data-object="identity" role="button" tabIndex={0} className="station-object" aria-label={`Identity for ${pod.name}: permissions unknown`} transform={`translate(${(i%3-Math.floor(i/3))*64+24} ${58+(i%3+Math.floor(i/3))*32-28})`} onClick={()=>{setIdentityPod(`${pod.workload.namespace}/${pod.name}`);setBoundary('identity')}} onKeyDown={e=>activate(e,()=>{setIdentityPod(`${pod.workload.namespace}/${pod.name}`);setBoundary('identity')})}><title>Identity · permissions unknown</title><rect x="-5" y="-7" width="10" height="14" rx="2" fill="#d8ddcf" stroke="#38546a"/><circle cy="-2" r="2" fill="#607b8b"/><path d="M-2 3h4" stroke="#607b8b"/></g>)}
         {room.pods.length>9&&<g data-object="page" role="button" tabIndex={0} className="station-object" transform="translate(0 315)" aria-label={`Next pods in ${room.node||'waiting bay'}`} onClick={()=>setPages({...pages,[room.node]:start+9>=room.pods.length?0:page+1})} onKeyDown={e=>activate(e,()=>setPages({...pages,[room.node]:start+9>=room.pods.length?0:page+1}))}><rect x="-53" y="-16" width="106" height="26" rx="12" fill="#31475e"/><text textAnchor="middle">{start+1}–{Math.min(start+9,room.pods.length)} / {room.pods.length} ›</text></g>}
