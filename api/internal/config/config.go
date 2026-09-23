@@ -8,32 +8,40 @@ import (
 )
 
 type Config struct {
-	Address             string
-	Environment         string
-	Version             string
-	ClusterName         string
-	Kubeconfig          string
-	DemoMode            bool
-	OperationsEnabled   bool
-	OperationNamespaces []string
-	MinReplicas         int32
-	MaxReplicas         int32
-	ALBSignerARN        string
-	AWSRegion           string
+	Address                 string
+	Environment             string
+	Version                 string
+	ClusterName             string
+	Kubeconfig              string
+	DemoMode                bool
+	OperationsEnabled       bool
+	OperationNamespaces     []string
+	MinReplicas             int32
+	MaxReplicas             int32
+	ALBSignerARN            string
+	AWSRegion               string
+	DurableOperations       bool
+	OperationStoreNamespace string
+	ControllerID            string
+	ControllerActiveActive  bool
 }
 
 func FromEnv() (Config, error) {
 	cfg := Config{
-		Address:             envOr("KUBEVISTA_ADDRESS", ":8080"),
-		Environment:         envOr("KUBEVISTA_ENVIRONMENT", "development"),
-		Version:             envOr("KUBEVISTA_VERSION", "dev"),
-		ClusterName:         envOr("KUBEVISTA_CLUSTER_NAME", "kubevista-dev"),
-		Kubeconfig:          os.Getenv("KUBECONFIG"),
-		DemoMode:            strings.EqualFold(os.Getenv("KUBEVISTA_DEMO_MODE"), "true"),
-		OperationsEnabled:   strings.EqualFold(os.Getenv("KUBEVISTA_OPERATIONS_ENABLED"), "true"),
-		OperationNamespaces: splitList(envOr("KUBEVISTA_OPERATION_NAMESPACES", "kubevista")),
-		ALBSignerARN:        os.Getenv("KUBEVISTA_ALB_SIGNER_ARN"),
-		AWSRegion:           envOr("AWS_REGION", "us-west-2"),
+		Address:                 envOr("KUBEVISTA_ADDRESS", ":8080"),
+		Environment:             envOr("KUBEVISTA_ENVIRONMENT", "development"),
+		Version:                 envOr("KUBEVISTA_VERSION", "dev"),
+		ClusterName:             envOr("KUBEVISTA_CLUSTER_NAME", "kubevista-dev"),
+		Kubeconfig:              os.Getenv("KUBECONFIG"),
+		DemoMode:                strings.EqualFold(os.Getenv("KUBEVISTA_DEMO_MODE"), "true"),
+		OperationsEnabled:       strings.EqualFold(os.Getenv("KUBEVISTA_OPERATIONS_ENABLED"), "true"),
+		OperationNamespaces:     splitList(envOr("KUBEVISTA_OPERATION_NAMESPACES", "kubevista")),
+		ALBSignerARN:            os.Getenv("KUBEVISTA_ALB_SIGNER_ARN"),
+		AWSRegion:               envOr("AWS_REGION", "us-west-2"),
+		DurableOperations:       strings.EqualFold(os.Getenv("KUBEVISTA_DURABLE_OPERATIONS"), "true"),
+		OperationStoreNamespace: envOr("KUBEVISTA_OPERATION_STORE_NAMESPACE", "kubevista-operations"),
+		ControllerID:            os.Getenv("KUBEVISTA_CONTROLLER_ID"),
+		ControllerActiveActive:  strings.EqualFold(os.Getenv("KUBEVISTA_CONTROLLER_ACTIVE_ACTIVE"), "true"),
 	}
 	minReplicas, err := envInt32("KUBEVISTA_MIN_REPLICAS", 1)
 	if err != nil {
@@ -44,6 +52,9 @@ func FromEnv() (Config, error) {
 		return Config{}, err
 	}
 	cfg.MinReplicas, cfg.MaxReplicas = minReplicas, maxReplicas
+	if cfg.DurableOperations && (!cfg.OperationsEnabled || cfg.DemoMode) {
+		return Config{}, fmt.Errorf("durable operations require enabled operations and a real Kubernetes API (local test clusters are supported)")
+	}
 	if !strings.HasPrefix(cfg.Address, ":") && !strings.Contains(cfg.Address, ":") {
 		return Config{}, fmt.Errorf("KUBEVISTA_ADDRESS must be host:port or :port")
 	}

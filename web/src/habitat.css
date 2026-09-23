@@ -1,0 +1,1 @@
+.hab-switch{display:flex;gap:4px;margin:18px 0 4px}.hab-switch button{font:inherit;color:#b8cbdc;background:#182737;border:1px solid #3a5266;border-radius:7px;padding:9px 16px;cursor:pointer}.hab-switch button[aria-pressed=true]{color:#192e40;background:#e7dabb;border-color:#e7dabb}.hab-switch button:focus-visible{outline:3px solid #e8ce8f;outline-offset:3px}

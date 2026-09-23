@@ -1,0 +1,54 @@
+# Opt-in: register TWO distinct destination clusters with these names first.
+# Do not install alongside the existing dashboard Application on the same cluster.
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata: {name: kubevista-delivery, namespace: argocd}
+spec:
+  sourceRepos: [https://github.com/andy98w/Kubernetes-Dashboard.git]
+  destinations:
+    - {name: kubevista-staging, namespace: kubevista}
+    - {name: kubevista-production, namespace: kubevista}
+  clusterResourceWhitelist:
+    - {group: rbac.authorization.k8s.io, kind: ClusterRole}
+    - {group: rbac.authorization.k8s.io, kind: ClusterRoleBinding}
+    - {group: '', kind: Namespace}
+  namespaceResourceWhitelist: [{group: '*', kind: '*'}]
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata: {name: kubevista-staging, namespace: argocd}
+spec:
+  project: kubevista-delivery
+  source:
+    repoURL: https://github.com/andy98w/Kubernetes-Dashboard.git
+    targetRevision: main
+    path: platform/apps/dashboard
+    helm:
+      valueFiles: [../../releases/staging.json]
+      values: |
+        clusterName: kubevista-staging
+        ingress: {enabled: false}
+        deliverySmoke: true
+  destination: {name: kubevista-staging, namespace: kubevista}
+  syncPolicy:
+    automated: {prune: true, selfHeal: true}
+    syncOptions: [CreateNamespace=true]
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata: {name: kubevista-production, namespace: argocd}
+spec:
+  project: kubevista-delivery
+  source:
+    repoURL: https://github.com/andy98w/Kubernetes-Dashboard.git
+    targetRevision: main
+    path: platform/apps/dashboard
+    helm:
+      valueFiles: [../../releases/production.json]
+      values: |
+        clusterName: kubevista-production
+        ingress: {enabled: false}
+        deliverySmoke: true
+  destination: {name: kubevista-production, namespace: kubevista}
+  syncPolicy:
+    syncOptions: [CreateNamespace=true]

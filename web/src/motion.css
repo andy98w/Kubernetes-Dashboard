@@ -1,0 +1,40 @@
+/* Short interaction feedback; slow idle cues never encode packet traffic. */
+.station-shell{--motion-fast:140ms;--motion-enter:220ms;--motion-ease:cubic-bezier(.2,.75,.25,1)}
+.station-shell button,.station-shell summary,.station-shell a{transition:transform var(--motion-fast) var(--motion-ease),background-color var(--motion-fast),color var(--motion-fast),opacity var(--motion-fast)}
+@media(hover:hover){.station-shell button:not(:disabled):hover,.station-shell summary:hover{transform:translateY(-1px)}.station-shell .station-dock button:hover .icon{transform:translateX(2px)}.station-shell .interactive-row:hover{background:#243c5144}}
+.station-shell button:not(:disabled):active,.station-shell summary:active{transform:translateY(0) scale(.97)}
+.station-shell button:disabled{opacity:.45;cursor:not-allowed}
+.station-shell .station-dock .icon{transition:transform 180ms var(--motion-ease)}
+.station-shell.nav-expanded .station-dock button span{animation:ui-reveal 180ms ease-out}
+.station-shell :is(.map-options,.view-options,.station-lab)[open]>:not(summary){animation:ui-reveal var(--motion-enter) var(--motion-ease)}
+.station-shell :is(.station-panel-scrim,.drawer-backdrop){animation:ui-fade 160ms ease-out}
+.station-shell .station-inspect{animation:ui-reveal 180ms var(--motion-ease);bottom:12px}
+.station-shell .topology-panel{bottom:12px}
+.station-shell .office-indicator{animation:equipment-breathe 6s ease-in-out infinite}
+.station-shell .station-alert .station-room-light{animation:incident-beacon 2.6s ease-in-out infinite}
+.station-shell .repair .station-light{animation:incident-beacon 2.6s ease-in-out infinite}
+.station-shell .incident-card[data-state=Active] .timeline-item:first-child i{animation:incident-beacon 2.6s ease-in-out infinite}
+.station-shell .incident-response[aria-busy=true]{opacity:.7;transition:opacity 180ms}
+.station-shell :is(.topology-parts button,.incident-card,.evidence-card){transition:border-color 160ms,background-color 160ms}
+.station-shell .topology-parts button:hover{border-color:#b0c6d4;background:#35536b}
+.station-shell .scenario-picker{width:100%;position:relative;color:#dce7ec;font-size:12px}
+.station-shell .scenario-picker>summary{display:flex;justify-content:space-between;gap:12px;list-style:none;padding:11px 12px;border:1px solid #637d91;border-radius:9px;background:#294359;cursor:pointer}
+.scenario-picker>summary::-webkit-details-marker{display:none}
+.scenario-picker fieldset{margin:6px 0 0;padding:5px;border:1px solid #49647a;border-radius:9px;background:#172c42;animation:ui-reveal 160ms ease-out;max-height:230px;overflow:auto}
+.scenario-picker legend{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+.scenario-picker label{display:flex;gap:9px;align-items:center;padding:10px 8px;border-radius:6px;cursor:pointer}
+.scenario-picker label:hover,.scenario-picker label:has(input:checked){background:#34536b}
+.scenario-picker input{accent-color:#b4dbc9;flex:none}
+.scenario-picker label:focus-within{outline:2px solid #e8ce8f;outline-offset:-2px}
+.station-shell .lab-controls>button{padding:11px;border:1px solid #b8946d;border-radius:9px;background:#6a4935;color:#f5e5ce;font:inherit;font-size:12px;cursor:pointer}
+.station-shell .lab-controls>strong{display:none}
+.station-shell .view-options[open]{max-height:calc(100dvh - 105px);overflow:auto}
+.station-shell .view-options .station-lab[open]{max-height:none;overflow:visible}
+.station-shell .scenario-picker>summary{width:100%;box-sizing:border-box}
+.station-shell:has(.station-paused) *{animation-play-state:paused!important}
+.station-shell>div[inert] *{animation-play-state:paused!important}
+@keyframes ui-reveal{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+@keyframes ui-fade{from{opacity:0}to{opacity:1}}
+@keyframes equipment-breathe{0%,100%{opacity:1}50%{opacity:.86}}
+@keyframes incident-beacon{0%,100%{opacity:1}50%{opacity:.35}}
+@media(prefers-reduced-motion:reduce){.station-shell *{animation:none!important;transition:none!important}}

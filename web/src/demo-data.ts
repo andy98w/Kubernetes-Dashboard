@@ -62,7 +62,7 @@ export function demoWorkloadDetail(item: typeof workloads[number],enrich=false) 
   if(lab) return {
     workload:{...actual},strategy:'RollingUpdate',selector:{app:'probe-failure'} as Record<string,string>,labels:{app:'probe-failure'} as Record<string,string>,
     images:[{name:'web',image:activeScenario==='imagepull'?'nginx:kubevista-nonexistent-image':'nginx:1.28-alpine'}],
-    pods:[{name:'probe-failure-simulated',phase:activeScenario==='scheduling'?'Pending':'Running',ready:actual.ready,containers:1,restarts:activeScenario==='crashloop'||activeScenario==='oom'?3:0,node:activeScenario==='scheduling'?'':'simulated-node',createdAt:ago(1)}],
+    pods:[{name:'probe-failure-simulated',phase:activeScenario==='scheduling'?'Pending':'Running',ready:actual.ready,containers:1,restarts:activeScenario==='crashloop'||activeScenario==='oom'?3:0,node:activeScenario==='scheduling'?'':'ip-10-0-21-18',createdAt:ago(1)}],
     services:[],policies:[],events:[],
     diagnoses:activeScenario?[{...scenarioEvidence[activeScenario],resource:'Pod/probe-failure-simulated'}]:[],
     timeline:[...labTimeline],

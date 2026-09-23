@@ -131,11 +131,20 @@ func (c *Client) PlanOperation(ctx context.Context, request OperationRequest) (O
 		impact = "Restores the exact pod template from owned ReplicaSet revision " + revision + ". Previous does not mean healthy. Review all template changes; GitOps may restore the source configuration."
 	}
 	plan := OperationPlan{ID: newOperationID(), Action: request.Action, Target: target(request), Reason: request.Reason, CurrentReplicas: current, DesiredReplicas: desired, Impact: impact, ResourceVersion: deployment.ResourceVersion, Authorized: true, DryRun: true, CreatedAt: time.Now().UTC(), RollbackRevision: revision, TemplateDiff: changes}
-	c.rememberOperationPlan(request, plan)
+	if c.durable != nil {
+		if err := c.saveDurablePlan(ctx, request, plan, deployment); err != nil {
+			return OperationPlan{}, err
+		}
+	} else {
+		c.rememberOperationPlan(request, plan)
+	}
 	return plan, nil
 }
 
 func (c *Client) ExecuteOperation(ctx context.Context, request OperationRequest, actor string) (OperationRecord, error) {
+	if c.durable != nil {
+		return c.approveDurable(ctx, request, actor)
+	}
 	if request.PlanID == "" || request.ExpectedResourceVersion == "" {
 		return OperationRecord{}, &OperationError{"plan_required", "review the operation again before executing it"}
 	}
@@ -175,7 +184,10 @@ func (c *Client) ExecuteOperation(ctx context.Context, request OperationRequest,
 	return record, nil
 }
 
-func (c *Client) RecentOperations(context.Context) ([]OperationRecord, error) {
+func (c *Client) RecentOperations(ctx context.Context) ([]OperationRecord, error) {
+	if c.durable != nil {
+		return c.durableRecords(ctx)
+	}
 	c.audit.mu.RLock()
 	defer c.audit.mu.RUnlock()
 	return append([]OperationRecord(nil), c.audit.records...), nil

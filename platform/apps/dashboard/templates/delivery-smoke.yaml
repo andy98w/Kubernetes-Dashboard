@@ -1,0 +1,40 @@
+{{- if .Values.deliverySmoke }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: kubevista-delivery-smoke
+  annotations:
+    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook-delete-policy: HookSucceeded,BeforeHookCreation
+spec:
+  backoffLimit: 1
+  activeDeadlineSeconds: 120
+  ttlSecondsAfterFinished: 86400
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: kubevista
+        app.kubernetes.io/component: smoke-test
+    spec:
+      restartPolicy: Never
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        seccompProfile: {type: RuntimeDefault}
+      containers:
+        - name: smoke
+          image: busybox:1.37.0
+          command: [sh, -ec]
+          args:
+            - wget -qO- --timeout=10 http://kubevista-api/readyz;
+              wget -qO- --timeout=10 http://kubevista-web/healthz;
+              wget -qO- --timeout=10 http://kubevista-web/ | grep -q KubeVista
+          resources:
+            requests: {cpu: 5m, memory: 8Mi}
+            limits: {cpu: 50m, memory: 32Mi}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: {drop: [ALL]}
+{{- end }}

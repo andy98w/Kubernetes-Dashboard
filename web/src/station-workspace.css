@@ -1,0 +1,69 @@
+/* Station chrome: quiet instrumentation around a playful, explorable map. */
+.station-shell .workspace{position:relative}
+.station-shell .station{position:relative}
+.map-options,.view-options{position:absolute;top:10px;z-index:8;color:#d8e2e8;font-size:12px}
+.map-options{right:12px}.view-options{right:130px}
+.map-options>summary,.view-options>summary{cursor:pointer;padding:10px 14px;background:#263e54ee;border:1px solid #506a80;border-radius:18px;list-style:none}
+.map-options[open],.view-options[open]{width:min(330px,calc(100% - 24px));background:#1c3047f5;border:1px solid #506a80;border-radius:14px;padding:8px;box-shadow:0 8px 30px #0a152666}
+.view-options[open]{right:12px;z-index:9}
+.map-options[open]{width:auto;padding:0;border:0;border-radius:0;background:transparent;box-shadow:none}
+.station-shell .map-options[open]>.station-toolbar{position:absolute;top:calc(100% + 8px);right:0;width:min(330px,calc(100vw - var(--rail) - 24px));box-sizing:border-box;background:#1c3047f5;border:1px solid #506a80;border-radius:14px;box-shadow:0 8px 30px #0a152666}
+.station-shell .view-options .hab-switch{position:static;margin:10px 0;box-shadow:none}
+.station-shell .view-options .lab-controls{display:flex;flex-direction:column;align-items:stretch}
+.station-shell .view-options .station-lab{padding:0 8px;max-height:50vh;overflow:auto}
+.station-shell .map-options .station-toolbar{display:block;padding:8px}
+.station-shell .map-options h1{display:none}
+.station-shell .map-options .namespace-map-key{flex-wrap:wrap;padding:8px;max-height:30vh;overflow:auto}
+.station-shell .workspace>.data-panel:has(.station){margin-top:0}
+.station-shell .station-notice{position:absolute;bottom:40px;left:12px;z-index:3;background:#1b3048ed;border-radius:6px;max-width:70%}
+.subnet-zones{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}.subnet-zones>div{border:1px dashed #8394ad;border-radius:8px;padding:8px}.subnet-zones strong{font-size:11px}.subnet-zones span{display:block;padding:10px 5px;margin-top:7px;background:#304b61;border-radius:5px;font-size:10px;color:#cadbe4}.subnet-zones span:nth-child(3){background:#31574f}.subnet-zones span:nth-child(4){background:#4c4560}
+.namespace-map-key{display:flex;gap:6px;padding:4px 16px 10px;overflow:auto;flex-shrink:0}.namespace-map-key button{white-space:nowrap;border:1px solid #435d73;border-radius:14px;background:transparent;color:#bdcddb;padding:5px 9px;font-size:11px;cursor:pointer}.namespace-map-key button[aria-pressed=true]{background:#35526a;color:#fff}.namespace-map-key i{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:6px}.topology-panel{position:absolute;right:12px;top:12px;bottom:32px;width:min(380px,calc(100% - 24px));overflow:auto;background:#192d43f5;border:1px solid #6e879b;border-radius:12px;padding:16px;z-index:4;box-shadow:0 8px 30px #09152266;animation:station-popup-in .16s ease-out}.topology-panel header{display:flex;justify-content:space-between;align-items:center}.topology-panel h2{font-size:17px}.topology-panel h3{font-size:13px;overflow-wrap:anywhere}.topology-panel p{font-size:12px;line-height:1.6;color:#b6cada}.topology-panel button{cursor:pointer;color:#e0e8ec;background:#2b455c;border:1px solid #526e84;border-radius:7px;padding:7px;font-size:11px}.topology-panel header button{font-size:20px;background:none;border:0}.topology-panel a{display:block;margin-top:16px;color:#b6dfdb;font-size:12px}.topology-panel summary{font-size:12px;cursor:pointer}.topology-parts{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:14px 0}.topology-parts article,.topology-parts button{padding:10px;text-align:left;border:1px solid #425b72;border-radius:8px}.topology-parts strong{font-size:12px}.topology-parts small{display:block;font-size:10px;color:#acc3d5;margin-top:6px}.topology-path{display:flex;flex-wrap:wrap;gap:4px;margin:10px 0}.topology-path b{margin:0 5px;color:#8dafa9}.topology-service-path{display:block;width:100%;text-align:left;margin:5px 0;overflow-wrap:anywhere}.topology-service-path small{display:block;margin-top:4px}.topology-source{color:#dbc897!important}.station-bot-target{transition:opacity .15s}@media(prefers-reduced-motion:reduce){.topology-panel{animation:none}.station-bot-target{transition:none}}
+@media(pointer:fine){.station-shell,.station-shell .station-world{cursor:url('/station-cursor.svg') 3 2,auto}.station-shell .station-world:active{cursor:grabbing}.station-shell button,.station-shell a,.station-shell select,.station-shell .station-object,.station-shell .station-bot-target{cursor:pointer}}
+.station-shell{--rail:62px;--surface:#1b3046;--ink:#e4e9e9;--muted:#a9bfce;font-family:'Avenir Next','Avenir','Segoe UI',sans-serif;color:var(--ink)}
+.station-shell.nav-expanded{--rail:166px}
+.station-shell.app-shell{height:100dvh;min-height:0;overflow:hidden}
+.station-shell>div:first-child{height:100%;display:grid;grid-template-columns:var(--rail) minmax(0,1fr);grid-template-rows:62px minmax(0,1fr)}
+.station-shell .station-app-header{grid-column:1/-1;padding:8px 20px;background:#182b40}
+.station-shell .station-app-header .connection-pill{display:inline-flex;font-size:11px;padding:6px 9px}
+.station-shell .brand-mark{display:flex;align-items:center;gap:10px}
+.station-shell .brand-mark strong{font-family:inherit;font-weight:650;letter-spacing:-.6px;font-size:20px}
+.bot-logo{width:38px;height:38px;flex:none}
+.station-shell .station-dock{grid-row:2;flex-direction:column;justify-content:flex-start;align-items:stretch;gap:6px;padding:12px 8px;overflow:auto;background:#182b40;border-right:1px solid #30475d}
+.station-shell .station-dock button{min-height:42px;padding:10px 13px;flex-shrink:0;border-radius:12px;justify-content:flex-start}
+.station-shell:not(.nav-expanded) .station-dock button span{display:none}
+.station-shell .station-dock .nav-toggle{font-size:19px;margin-bottom:10px}
+.station-shell .station-dock .nav-toggle span{font-size:12px}
+.station-shell main{min-height:0;min-width:0;overflow:hidden}
+.station-shell .workspace{height:100%;max-width:none;padding:10px 16px;display:flex;flex-direction:column;min-height:0;overflow:auto}
+.station-shell .workspace:has(.station){overflow:hidden;padding:0}
+.station-shell .workspace>.data-panel:has(.station){flex:1;min-height:0;display:flex;flex-direction:column;margin:0;border:0;border-radius:0;box-shadow:none}
+.station-shell .data-panel>.station{flex:1;min-height:0;display:flex;flex-direction:column;border-radius:0}
+.station-shell .station-stage{flex:1;min-height:0;height:auto}
+.station-shell .station-toolbar,.station-shell .station-footer,.station-shell .filters{flex-shrink:0}
+.station-shell .station-footer{padding:8px 16px;font-family:inherit}
+.station-shell .station-footer details[open]{position:absolute;bottom:12px;right:20px;z-index:5;background:#20364b;padding:14px;border-radius:12px;border:1px solid #61788c;max-width:min(480px,75vw)}
+.station-shell .station-lab,.station-shell .demo-banner{margin:0;font-size:11px}
+.station-shell .station-lab[open],.station-shell .demo-banner[open]{flex-shrink:0;max-height:25vh;overflow:auto}
+.station-shell .hab-switch{order:-1;position:sticky;top:0;z-index:6;margin-top:0;margin-bottom:8px;flex-shrink:0;box-shadow:0 3px 12px #101c2b66}
+.station-shell .workspace:not(:has(.station))> *{flex-shrink:0}
+.station-shell .filters{padding:10px 16px;gap:10px;flex-direction:row;align-items:center}
+.station-shell .filters input,.station-shell .filters .ui-select{height:36px}
+.station-shell input,.station-shell button,.station-shell select{font-family:inherit}
+.station-shell .filters input{border-radius:10px;background:#172a3c;border-color:#3b556a;font-size:12px;min-width:0}
+.ui-select{position:relative;display:inline-flex;min-width:0;max-width:100%;vertical-align:middle}
+.station-shell .ui-select select{appearance:none;width:100%;min-width:0;border:1px solid #455f74;border-radius:10px;padding:9px 34px 9px 12px;background:#22394d;color:#e0e7e9;font-size:12px;cursor:pointer}
+.ui-select>svg{position:absolute;right:12px;top:50%;transform:translateY(-50%);width:14px;height:14px;fill:none;stroke:#adc5d4;stroke-width:1.8;pointer-events:none}
+.ui-select select:focus-visible{outline:2px solid #e8ce8f;outline-offset:2px}
+.station-gesture-hint{position:absolute;bottom:14px;right:18px;color:#a9bfce;font-size:10px;pointer-events:none}
+.station-world:focus-visible{outline:2px solid #e8ce8f;outline-offset:-3px}
+/* Keep inspection headers clear of the shared top control row. */
+.station-shell .topology-panel,.station-shell .station-events{top:62px;max-height:calc(100% - 94px)}
+.station-shell .station-stage:has(.route-clear) .topology-panel,.station-shell .station-stage:has(.route-clear) .station-events{top:96px;max-height:calc(100% - 128px)}
+/* Panning is a canvas gesture; inspection panel text remains selectable. */
+.station-world,.station-world *{-webkit-user-select:none;user-select:none}
+.station-inspect,.station-events{animation:station-popup-in .16s ease-out}
+.station-panel,.workload-drawer{animation:station-panel-in .2s ease-out}
+@keyframes station-popup-in{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+@keyframes station-panel-in{from{opacity:.5;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
+@media(max-width:700px){.station-shell{--rail:52px}.station-shell.nav-expanded{--rail:140px}.station-shell .station-dock{padding:8px 4px}.station-shell .station-dock button{padding:10px}.station-shell .workspace{padding:8px}.station-shell .filters{padding:8px;flex-wrap:wrap}.station-shell .filters input{width:100%;flex:1 1 110px}.station-shell .ui-select{flex:1 1 110px}.station-shell .station-toolbar{padding:8px}.station-shell .station-toolbar h1{font-size:14px}.station-shell .station-tools button span{display:none}.station-shell .station-footer{gap:8px;font-size:10px;padding:8px}.station-gesture-hint{font-size:9px;right:8px;bottom:8px}.station-shell .station-inspect{bottom:32px}.station-shell .station-events{max-height:calc(100% - 40px)}}
+@media(prefers-reduced-motion:reduce){.station-inspect,.station-events,.station-panel,.workload-drawer{animation:none}}

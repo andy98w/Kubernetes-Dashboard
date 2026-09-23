@@ -45,6 +45,14 @@ func main() {
 
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
+	if controller, ok := inventory.(interface{ RunOperationController(context.Context) error }); ok {
+		go func() {
+			if err := controller.RunOperationController(ctx); err != nil {
+				slog.Error("operation controller stopped", "error", err)
+				stop()
+			}
+		}()
+	}
 	go func() {
 		slog.Info("api listening", "address", cfg.Address, "environment", cfg.Environment)
 		if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {

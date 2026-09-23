@@ -3,6 +3,8 @@ name: Build and sign application images
 on:
   workflow_dispatch:
   push:
+    branches: [main]
+    paths: ['api/**', 'web/**', '.github/workflows/images.yml', 'scripts/delivery/**']
     tags: ["v*"]
 
 permissions:
@@ -14,7 +16,13 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  checks:
+    uses: ./.github/workflows/ci.yml
+    permissions:
+      contents: read
   publish:
+    needs: checks
+    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
     name: Publish ${{ matrix.image }}
     runs-on: ubuntu-latest
     environment: kubevista-images
@@ -60,6 +68,12 @@ jobs:
       - name: Install Cosign
         uses: sigstore/cosign-installer@v4.1.2
 
+      - name: Scan exact image before signing or promotion
+        env:
+          IMAGE: ${{ steps.ecr.outputs.registry }}/${{ matrix.image }}@${{ steps.build.outputs.digest }}
+        run: |
+          docker run --rm -v "$HOME/.docker:/root/.docker:ro" aquasec/trivy:0.69.3 image --exit-code 1 --severity HIGH,CRITICAL "$IMAGE"
+
       - name: Sign image digest with GitHub OIDC
         env:
           IMAGE: ${{ steps.ecr.outputs.registry }}/${{ matrix.image }}
@@ -72,3 +86,31 @@ jobs:
           DIGEST: ${{ steps.build.outputs.digest }}
         run: |
           echo "\`${{ matrix.image }}\` → \`${IMAGE}@${DIGEST}\`" >> "${GITHUB_STEP_SUMMARY}"
+          mkdir -p release
+          jq -n --arg repository "$IMAGE" --arg digest "$DIGEST" --arg revision "$GITHUB_SHA" '{repository:$repository,digest:$digest,revision:$revision}' > release/${{ matrix.image }}.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-${{ matrix.image }}
+          path: release/*.json
+
+  staging-pr:
+    needs: publish
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      actions: write
+    steps:
+      - uses: actions/checkout@v7
+        with: {ref: main}
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: release-*
+          path: release
+          merge-multiple: true
+      - run: python3 scripts/delivery/promote.py staging --artifacts release
+      - name: Open staging promotion PR
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash scripts/delivery/open-pr.sh staging

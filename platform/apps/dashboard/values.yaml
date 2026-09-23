@@ -9,6 +9,9 @@ webImage:
   digest: "sha256:add0e4d4a0981658f5d5eb87037c4489b1c5e43c2b478aacb919eb8319927a72"
   pullPolicy: IfNotPresent
 replicas: 2
+deliverySmoke: false
+deliveryArgo: false
+deliveryGitHub: false
 webReplicas: 2
 clusterName: kubevista-dev
 operations:

@@ -15,6 +15,8 @@ case "$scenario" in
   crashloop) "${k[@]}" patch deployment probe-failure --type=json -p='[{"op":"add","path":"/spec/template/spec/containers/0/command","value":["/bin/sh","-c","echo injected-crash >&2; exit 1"]}]' ;;
   imagepull) "${k[@]}" set image deployment/probe-failure web=nginx:kubevista-nonexistent-image ;;
   scheduling) "${k[@]}" patch deployment probe-failure --type=json -p='[{"op":"replace","path":"/spec/template/spec/containers/0/resources/requests/cpu","value":"1000"},{"op":"replace","path":"/spec/template/spec/containers/0/resources/limits/cpu","value":"1000"}]' ;;
-  oom) "${k[@]}" patch deployment probe-failure --type=json -p='[{"op":"add","path":"/spec/template/spec/containers/0/command","value":["/bin/sh","-c","head -c 134217728 /dev/zero > /dev/shm/fill; sleep 3600"]},{"op":"add","path":"/spec/template/spec/volumes","value":[{"name":"memory","emptyDir":{"medium":"Memory"}}]},{"op":"add","path":"/spec/template/spec/containers/0/volumeMounts","value":[{"name":"memory","mountPath":"/dev/shm"}]}]' ;;
+  # Allocate in PID 1, not an emptyDir: tmpfs survives restarts and can prevent
+  # the next container from starting, replacing OOMKilled with StartError.
+  oom) "${k[@]}" patch deployment probe-failure --type=json -p='[{"op":"add","path":"/spec/template/spec/containers/0/command","value":["awk","BEGIN { value = \"x\"; while (1) value = value value }"]}]' ;;
   *) echo "Use setup, probe, crashloop, imagepull, scheduling, or oom" >&2; exit 1 ;;
 esac
