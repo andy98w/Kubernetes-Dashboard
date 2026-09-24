@@ -1,0 +1,15 @@
+.fleet-annex text{fill:#c1d4de;font-size:13px;pointer-events:none}
+.fleet-triage article{padding:16px 0;border-top:1px solid #496477}
+.fleet-triage article h3{display:flex;justify-content:space-between;gap:12px}
+.fleet-triage article code,.fleet-triage article p{overflow-wrap:anywhere}
+.fleet-triage button{border:1px solid #67889a;border-radius:8px;background:#29475b;color:#e0ebed;padding:8px 12px;cursor:pointer;transition:background .15s}
+.fleet-triage button:hover{background:#3b6073}
+.fleet-triage button:focus-visible{outline:2px solid #e7c98f;outline-offset:3px}
+.fleet-triage button:disabled{opacity:.5;cursor:default}
+.fleet-triage article>button{display:block;margin-top:12px}
+.triage-inject{display:flex;flex-wrap:wrap;gap:8px}
+.fleet-triage input{display:block;width:100%;box-sizing:border-box;margin:8px 0;padding:10px;border:1px solid #67889a;border-radius:8px;background:#162b3d;color:#e0ebed}
+.station-shell .topology-panel p,.station-shell .topology-panel button,.station-shell .topology-panel summary{font-size:14px}
+.station-shell .topology-panel h3{font-size:15px}
+.fleet-annex text{font-size:17px}
+@media(prefers-reduced-motion:reduce){.fleet-triage button{transition:none}}

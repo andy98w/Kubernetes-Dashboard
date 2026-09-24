@@ -3,9 +3,9 @@ import {demoData} from './demo-data'
 import type {TopologyData} from './topology-data'
 type Network={ingresses:{namespace:string;name:string;class:string;hosts:string[];address:string}[];policies:{namespace:string;name:string;ingressRules:number;egressRules:number}[];observedAt:string}
 export type Layer='entry'|'egress'|'policy'|'identity'
-export function BoundaryObjects({onInspect}:{onInspect:(layer:Layer)=>void}){
+export function BoundaryObjects({onInspect,fleet=false}:{onInspect:(layer:Layer)=>void;fleet?:boolean}){
  return <g className="boundary-objects">
-  {([{kind:'entry',x:400,label:'Internet / ingress'},{kind:'policy',x:800,label:'Policy gate · unknown'},{kind:'egress',x:1200,label:'Egress · unknown'}] as const).map(o=><g key={o.kind} data-object="boundary" className="station-object" role="button" tabIndex={0} aria-label={o.label} transform={`translate(${o.x} 110)`} onClick={()=>onInspect(o.kind)} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();onInspect(o.kind)}}}>
+  {([{kind:'entry',x:400,label:'Internet / ingress'},{kind:'policy',x:800,label:'Policy gate · unknown'},{kind:'egress',x:1200,label:'Egress · unknown'}] as const).filter(o=>!fleet||o.kind!=='egress').map(o=><g key={o.kind} data-object="boundary" className="station-object" role="button" tabIndex={0} aria-label={o.label} transform={`translate(${o.x} 110)`} onClick={()=>onInspect(o.kind)} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();onInspect(o.kind)}}}>
    <title>{o.label} · conceptual object, inspect configuration</title>
    <path d="m-95 10 95-45 95 45v12L0 67l-95-45Z" fill="#293f54" stroke="#8da6b4"/>
    <path d="m-95 10 95-45 95 45L0 55Z" fill="#536f80"/>
@@ -23,7 +23,7 @@ export function BoundaryObjects({onInspect}:{onInspect:(layer:Layer)=>void}){
     <path d="m-19-33 44 22m-12-19 12 19-22 1" fill="none" stroke="#d6c18f" strokeWidth="6"/>
     <path d="m-35 17 27 14m-13-21 27 14" stroke="#8299a6" strokeWidth="3"/>
    </g>}
-   <text y="86" textAnchor="middle">{o.kind==='entry'?'Internet':o.kind==='policy'?'Policy':'Egress'}</text>
+   <text className="map-label-source" y="86" textAnchor="middle">{o.kind==='entry'?'Internet':o.kind==='policy'?'Policy':'Egress'}</text>
   </g>)}
  </g>
 }
@@ -42,7 +42,7 @@ export function BoundaryControls({simulated,layer,onClose,topology,identityPod,o
  useEffect(()=>{if(!layer)return;const close=(e:KeyboardEvent)=>{if(e.key==='Escape')onClose()};window.addEventListener('keydown',close);return()=>window.removeEventListener('keydown',close)},[layer,onClose])
  return <>
   {layer&&<aside className="topology-panel boundary-panel" aria-label="Boundary inspection"><header><h2>{{entry:'Internet → cluster',egress:'Outbound access',policy:'NetworkPolicy gates',identity:'Workload identity'}[layer]}</h2><button onClick={onClose} aria-label="Close boundary inspection">×</button></header>
-   <p className="topology-source">{simulated?'Demo configuration':'API inventory'} · not a traffic or authorization test</p>
+   <p className="topology-source">{simulated?'Local configuration':'API inventory'} · not a traffic or authorization test</p>
    {topology?.warnings.map(w=><p key={w}>{w}</p>)}
    {layer==='entry'&&topology?.routes.map((r,i)=><button key={i} className="topology-service-path" onClick={()=>onRoute(r.namespace+'/'+r.service)}>{r.host||'Default host'}{r.path} → {r.namespace}/{r.service}:{r.port}<small>{topology.endpoints.filter(e=>e.namespace===r.namespace&&e.service===r.service).length} discovered endpoints · select to trace</small></button>)}
    {layer==='identity'&&topology?.identities.filter(p=>p.namespace+'/'+p.pod===identityPod).map(p=><section key={p.pod}><h3>{p.namespace}/{p.serviceAccount||'(not reported)'}</h3><p>{p.pod}</p>{p.grants.map((g,i)=><details key={i}><summary>{g.binding} · scope {g.scope}</summary><pre>{JSON.stringify(g.rules,null,2)}</pre></details>)}<p>{p.grants.length?'Declared RBAC grants, not an effective authorization test.':'No grants returned; check discovery warnings. This does not prove denial.'}</p><p>Selected policies: {p.policies.join(', ')||'None returned'}</p></section>)}

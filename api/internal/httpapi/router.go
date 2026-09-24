@@ -25,6 +25,16 @@ type status struct {
 
 func New(cfg config.Config, inventory cluster.Inventory) http.Handler {
 	mux := http.NewServeMux()
+	registerIssues(mux, cfg)
+	mux.HandleFunc("GET /api/v1/station-inventory", func(w http.ResponseWriter, r *http.Request) {
+		if source, ok := inventory.(interface {
+			StationInventory(context.Context) (cluster.StationInventory, error)
+		}); ok {
+			serveInventory(w, r, "station-inventory", source.StationInventory)
+			return
+		}
+		writeJSON(w, 503, map[string]string{"error": "station inventory unavailable"})
+	})
 	mux.HandleFunc("GET /api/v1/delivery", func(w http.ResponseWriter, r *http.Request) {
 		if source, ok := inventory.(interface {
 			Delivery(context.Context) (cluster.Delivery, error)
@@ -145,7 +155,7 @@ func New(cfg config.Config, inventory cluster.Inventory) http.Handler {
 		writeJSON(w, http.StatusOK, map[string]any{"cluster": cfg.ClusterName, "environment": cfg.Environment, "version": cfg.Version, "readOnly": !cfg.OperationsEnabled, "operationsMode": mode, "operationNamespaces": cfg.OperationNamespaces, "minReplicas": cfg.MinReplicas, "maxReplicas": cfg.MaxReplicas, "refreshSeconds": 15})
 	})
 	mux.Handle("GET /metrics", promhttp.Handler())
-	return securityHeaders(mux)
+	return securityHeaders(requestLog(mux, cfg, slog.Default()))
 }
 
 func decodeOperation(w http.ResponseWriter, r *http.Request) (cluster.OperationRequest, bool) {

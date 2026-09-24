@@ -13,6 +13,7 @@ import (
 )
 
 func TestInvestigationAccess(t *testing.T) {
+	t.Setenv("KUBEVISTA_INVESTIGATION_TOKEN", strings.Repeat("a", 32))
 	for _, tc := range []struct {
 		name, enabled, environment, namespace, header string
 		code                                          int
@@ -29,6 +30,7 @@ func TestInvestigationAccess(t *testing.T) {
 			cfg := config.Config{Environment: tc.environment, DemoMode: true, OperationNamespaces: []string{"kubevista"}}
 			r := httptest.NewRequest("POST", "/api/v1/investigate/"+tc.namespace+"/Deployment/kubevista-api", nil)
 			r.Header.Set("X-KubeVista-Investigation", tc.header)
+			r.Header.Set("Authorization", "Bearer "+strings.Repeat("a", 32))
 			w := httptest.NewRecorder()
 			New(cfg, cluster.DemoInventory{}).ServeHTTP(w, r)
 			if w.Code != tc.code {
@@ -38,6 +40,21 @@ func TestInvestigationAccess(t *testing.T) {
 				t.Fatal("preview mislabeled")
 			}
 		})
+	}
+}
+
+func TestInvestigationRequiresCredential(t *testing.T) {
+	t.Setenv("KUBEVISTA_INVESTIGATION_ENABLED", "true")
+	t.Setenv("KUBEVISTA_INVESTIGATION_TOKEN", strings.Repeat("a", 32))
+	for _, authorization := range []string{"", "Bearer wrong"} {
+		r := httptest.NewRequest("POST", "/api/v1/investigate/kubevista/Deployment/kubevista-api", nil)
+		r.Header.Set("X-KubeVista-Investigation", "reviewed")
+		r.Header.Set("Authorization", authorization)
+		w := httptest.NewRecorder()
+		New(config.Config{Environment: "development", DemoMode: true, OperationNamespaces: []string{"kubevista"}}, cluster.DemoInventory{}).ServeHTTP(w, r)
+		if w.Code != 401 {
+			t.Fatalf("expected 401, got %d", w.Code)
+		}
 	}
 }
 
@@ -83,5 +100,45 @@ func TestModelCitationValidation(t *testing.T) {
 				t.Fatalf("unexpected validation: %v", err)
 			}
 		})
+	}
+}
+
+type enrichmentSpy struct {
+	cluster.DemoInventory
+	calls int
+}
+
+func (s *enrichmentSpy) Enrich(_ context.Context, d *cluster.WorkloadDetail) {
+	s.calls++
+	d.Logs = []cluster.LogExcerpt{{Pod: "test", Container: "web", Text: "password=must-not-leak"}}
+}
+
+func TestInvestigationLogsRequireExplicitOptIn(t *testing.T) {
+	t.Setenv("KUBEVISTA_INVESTIGATION_TOKEN", strings.Repeat("a", 32))
+	t.Setenv("KUBEVISTA_INVESTIGATION_ENABLED", "true")
+	t.Setenv("KUBEVISTA_LOCAL_MODEL", "")
+	for _, include := range []bool{false, true} {
+		inventory := &enrichmentSpy{}
+		cfg := config.Config{Environment: "development", OperationNamespaces: []string{"kubevista"}}
+		r := httptest.NewRequest("POST", "/api/v1/investigate/kubevista/Deployment/kubevista-api", nil)
+		r.Header.Set("X-KubeVista-Investigation", "reviewed")
+		r.Header.Set("Authorization", "Bearer "+strings.Repeat("a", 32))
+		if include {
+			r.Header.Set("X-KubeVista-Include-Logs", "true")
+		}
+		w := httptest.NewRecorder()
+		New(cfg, inventory).ServeHTTP(w, r)
+		if w.Code != 200 {
+			t.Fatalf("unexpected status: %d", w.Code)
+		}
+		if (inventory.calls == 1) != include {
+			t.Fatal("enrichment consent not respected")
+		}
+		if strings.Contains(w.Body.String(), "must-not-leak") {
+			t.Fatal("credential leaked")
+		}
+		if w.Header().Get("Cache-Control") != "no-store" {
+			t.Fatal("sensitive evidence may be cached")
+		}
 	}
 }

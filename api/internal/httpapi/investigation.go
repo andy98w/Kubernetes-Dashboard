@@ -3,6 +3,7 @@ package httpapi
 import (
 	"bytes"
 	"context"
+	"crypto/subtle"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -158,6 +159,11 @@ func investigationHandler(cfg config.Config, inventory cluster.Inventory) http.H
 			writeJSON(w, 403, map[string]string{"error": "explicit investigation header required"})
 			return
 		}
+		token := os.Getenv("KUBEVISTA_INVESTIGATION_TOKEN")
+		if len(token) < 32 || !strings.HasPrefix(r.Header.Get("Authorization"), "Bearer ") || subtle.ConstantTimeCompare([]byte(strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer ")), []byte(token)) != 1 {
+			writeJSON(w, 401, map[string]string{"error": "local investigation credentials required"})
+			return
+		}
 		allowed := false
 		for _, ns := range cfg.OperationNamespaces {
 			if ns == r.PathValue("namespace") {
@@ -186,8 +192,13 @@ func investigationHandler(cfg config.Config, inventory cluster.Inventory) http.H
 		}
 		if richer, ok := inventory.(interface {
 			Enrich(context.Context, *cluster.WorkloadDetail)
-		}); ok {
+		}); ok && r.Header.Get("X-KubeVista-Include-Logs") == "true" {
 			richer.Enrich(collect, &d)
+		}
+		if r.Header.Get("X-KubeVista-Include-Logs") != "true" {
+			d.Logs = nil
+			d.Metrics = nil
+			d.Warnings = append(d.Warnings, "Log and metric enrichment was not requested.")
 		}
 		stop()
 		packet := evidencePacket(d)

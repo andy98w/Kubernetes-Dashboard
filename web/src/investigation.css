@@ -1,0 +1,9 @@
+.investigation{border-top:1px solid #506a8066;margin-top:20px;padding-top:16px;color:#e3e8e9}
+.investigation-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.investigation .investigation-heading small{text-transform:none;letter-spacing:normal}
+.investigation h3{margin:0 0 4px}.investigation small,.investigation-note{color:#afbdcc;font-size:12px;line-height:1.6}
+.investigation p{line-height:1.6}.investigation label{display:flex;gap:8px;align-items:center;font-size:12px;margin-top:16px}
+.investigation button{background:#304e66;border:1px solid #607b8b;border-radius:8px;padding:8px 12px;color:#e3e8e9;cursor:pointer}
+.investigation button:disabled{opacity:.5;cursor:wait}.investigation article{border-left:2px solid #83b5bb;padding:8px 12px;margin:12px 0}
+.investigation pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px;line-height:1.6;margin-bottom:0}
+.investigation nav{display:flex;gap:8px}.investigation a{color:#a6e5c7}.investigation :focus-visible{outline:2px solid #a6e5c7;outline-offset:3px}

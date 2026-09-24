@@ -1,0 +1,6 @@
+.git
+node_modules
+dist
+.env*
+performance-test.html
+public/assets/journey-test-4k.mp4

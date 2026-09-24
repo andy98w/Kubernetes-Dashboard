@@ -4,7 +4,7 @@ for (const [scenario,code] of [['probe','ProbeFailed'],['crashloop','CrashLoopBa
  test(`diagnoses and recovers simulated ${scenario}`,async({page})=>{
   await page.goto('/#/workloads')
   await page.getByText('View & lab', {exact:true}).click()
- await page.getByText('Simulation lab', {exact:true}).click()
+ await page.locator('.station-lab > summary').click()
   await page.getByRole('button', {name:'Tables',exact:true}).click()
   await page.locator('.scenario-picker summary').click()
   await page.locator(`input[name="failure-scenario"][value="${scenario}"]`).check()
@@ -31,7 +31,7 @@ for (const [scenario,code] of [['probe','ProbeFailed'],['crashloop','CrashLoopBa
 test('a restart does not pretend to fix the broken probe',async({page})=>{
  await page.goto('/#/workloads')
  await page.getByText('View & lab', {exact:true}).click()
- await page.getByText('Simulation lab', {exact:true}).click()
+ await page.locator('.station-lab > summary').click()
  await page.getByRole('button', {name:'Tables',exact:true}).click()
  await page.getByRole('button',{name:'Inject simulated failure'}).click()
  await page.getByText('View & lab', {exact:true}).click()

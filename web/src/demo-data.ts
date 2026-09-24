@@ -1,3 +1,4 @@
+import {fleetRequested,fleetApps,fleetNode} from './fleet'
 const ago = (minutes: number) => new Date(Date.now() - minutes * 60_000).toISOString()
 
 const workloads = [
@@ -12,6 +13,11 @@ const workloads = [
 ]
 
 export const isDemoMode = import.meta.env.VITE_DATA_MODE === 'demo'
+export const isFleetDemo = isDemoMode && fleetRequested
+if(isFleetDemo){
+  workloads.push(...fleetApps.map(a=>({kind:'Deployment',namespace:a.namespace,name:a.name,ready:a.replicas,desired:a.replicas,status:'Healthy',createdAt:ago(30)})))
+  Object.assign(workloads.find(w=>w.name==='otel-agent')!,{ready:4,desired:4})
+}
 
 const scenarioEvidence:Record<string,{code:string;evidence:string;nextStep:string}>={
  probe:{code:'ProbeFailed',evidence:'Readiness probe returned HTTP 404 for /broken.',nextStep:'Compare the probe path with the previous revision. Restarting retains the broken path.'},
@@ -28,6 +34,7 @@ export function injectDemoIncident(scenario:string){
  activeScenario=scenario;labGeneration++
  Object.assign(workloads[0],{ready:0,status:'Progressing'})
  labTimeline=[{source:'Simulated rollout',detail:`Revision ${labGeneration} introduced ${scenario} failure.`,at:new Date().toISOString()},{source:'Simulated Kubernetes evidence',detail:scenarioEvidence[scenario].evidence,at:new Date().toISOString()}]
+ window.dispatchEvent(new Event('kubevista-demo-change'))
 }
 export function recoverDemoIncident(action:string,target:string){
  if(!target.endsWith('/Deployment/probe-failure'))return
@@ -37,6 +44,7 @@ export function recoverDemoIncident(action:string,target:string){
   Object.assign(workloads[0],{ready:1,status:'Healthy'})
   labTimeline.push({source:'Simulated recovery',detail:'Previous template restored; 1/1 updated and available.',at:new Date().toISOString()})
  }
+ window.dispatchEvent(new Event('kubevista-demo-change'))
 }
 
 export function demoData(view: string): unknown {
@@ -50,7 +58,16 @@ export function demoData(view: string): unknown {
     security:{findings:[{severity:'Warning',category:'Image policy',namespace:'demo',resource:'Pod/legacy-worker:worker',message:'Container references a mutable image tag; production workloads use immutable ECR digests.'}],podsEvaluated:51,networkPolicies:8,observedAt},
     cost:{nodes:[{name:'ip-10-0-11-42',instanceType:'t3.medium',capacityType:'SPOT',estimatedHourly:0.0146},{name:'ip-10-0-21-18',instanceType:'t3.medium',capacityType:'SPOT',estimatedHourly:0.0146}],controlPlaneHourly:0.10,loadBalancerHourly:0.0225,natGatewayHourly:0.045,estimatedHourly:0.1967,currency:'USD',disclaimer:'Estimate from the August 31 deployment. It excludes storage, data processing, logs, taxes, discounts, and free-tier credits.',observedAt},
     incidents:{items:[{id:'test-2026-08-31-api-loss',severity:'Controlled',status:'Resolved',title:'Controlled API pod-loss recovery',summary:'A running API pod was removed while Fortio generated traffic to validate disruption tolerance.',namespace:'kubevista',resource:'Deployment/kubevista-api',startedAt:ago(47),evidence:[{source:'Load generator',detail:'Fortio maintained 20 requests per second during the test',at:ago(47)},{source:'Kubernetes controller',detail:'Replacement API pod became Ready in 2 seconds',at:ago(46)},{source:'Verification',detail:'896/896 requests returned HTTP 200; p99 was approximately 2.78 ms',at:ago(43)}]}],observedAt},
-    settings:{cluster:'kubevista-dev',environment:'demo data',version:'0.3.0',readOnly:true,operationsMode:'simulation',operationNamespaces:['kubevista','kubevista-lab'],minReplicas:1,maxReplicas:6,refreshSeconds:0},
+    settings:{cluster:'kubevista-dev',environment:'local',version:'0.3.0',readOnly:true,operationsMode:'simulation',operationNamespaces:['kubevista','kubevista-lab'],minReplicas:1,maxReplicas:6,refreshSeconds:0},
+  }
+  if(isFleetDemo){
+    records.overview={cluster:'proposed-app-fleet',mode:'demo',nodes:{ready:4,total:4},namespaces:new Set(workloads.map(w=>w.namespace)).size,pods:{running:workloads.reduce((n,w)=>n+w.ready,0),pending:0,failed:0,succeeded:0,unknown:0},observedAt}
+    records.incidents={items:[],observedAt}
+    records.events={items:[],observedAt}
+    records.network={services:fleetApps.filter(a=>a.port).map(a=>({namespace:a.namespace,name:a.name,type:'ClusterIP',clusterIp:'Simulation only',ports:[a.port+'/TCP']})),ingresses:[...new Set(fleetApps.map(a=>a.namespace))].map(namespace=>({namespace,name:'proposed-'+namespace,class:'alb',hosts:[namespace+'.example.test'],address:'Not provisioned'})),policies:[],observedAt}
+    records.security={findings:[{severity:'Warning',category:'Simulation',namespace:'',resource:'Proposed fleet',message:'No live security evaluation or NetworkPolicy enforcement has been performed.'}],podsEvaluated:0,networkPolicies:0,observedAt}
+    records.settings={...(records.settings as object),cluster:'proposed-app-fleet',environment:'simulated EKS deployment'}
+    records.cost={nodes:[],controlPlaneHourly:0,loadBalancerHourly:0,natGatewayHourly:0,estimatedHourly:0,currency:'USD',disclaimer:'No cost estimate for this proposed fleet. Zero means not estimated, not free hosting.',observedAt}
   }
   return records[view]
 }
@@ -58,11 +75,19 @@ export function demoData(view: string): unknown {
 export function demoWorkloadDetail(item: typeof workloads[number],enrich=false) {
   const observedAt=new Date().toISOString()
   const lab=item.name==='probe-failure'
+  if(isFleetDemo&&!lab){
+    const app=fleetApps.find(a=>a.name===item.name)
+    return {workload:item,strategy:item.namespace==='club-os'?'Recreate':'RollingUpdate',selector:{app:item.name},labels:{app:item.name},images:[{name:'app',image:'simulation-only/not-published:'+item.name}],
+      pods:Array.from({length:item.ready},(_,i)=>({name:`${item.name}-demo-${i+1}`,node:fleetNode(item.name,i),phase:'Running',ready:1,containers:1,restarts:0,createdAt:ago(30)})),
+      services:app?.port||item.name.startsWith('kubevista')?[{namespace:item.namespace,name:item.name,type:'ClusterIP',clusterIp:'Not allocated (simulation)',ports:[`${app?.port||'8080'}/TCP`]}]:[],
+      policies:[],events:[],diagnoses:[],timeline:[],logs:[],metrics:[],warnings:[item.namespace==='club-os'?'Single-node SQLite design: workers are co-located. This does not provide high availability.':'Proposed deployment only; no image, policy, health, or traffic has been verified.'],observedAt,
+      recovery:{status:'Simulated',detail:'Illustrated healthy placement, not a live readiness check.',generation:1,observedGeneration:1}}
+  }
   const actual=lab?workloads[0]:item
   if(lab) return {
     workload:{...actual},strategy:'RollingUpdate',selector:{app:'probe-failure'} as Record<string,string>,labels:{app:'probe-failure'} as Record<string,string>,
     images:[{name:'web',image:activeScenario==='imagepull'?'nginx:kubevista-nonexistent-image':'nginx:1.28-alpine'}],
-    pods:[{name:'probe-failure-simulated',phase:activeScenario==='scheduling'?'Pending':'Running',ready:actual.ready,containers:1,restarts:activeScenario==='crashloop'||activeScenario==='oom'?3:0,node:activeScenario==='scheduling'?'':'ip-10-0-21-18',createdAt:ago(1)}],
+    pods:[{name:'probe-failure-simulated',phase:activeScenario==='scheduling'?'Pending':'Running',ready:actual.ready,containers:1,restarts:activeScenario==='crashloop'||activeScenario==='oom'?3:0,node:activeScenario==='scheduling'?'':isFleetDemo?'demo-worker-1':'ip-10-0-21-18',createdAt:ago(1)}],
     services:[],policies:[],events:[],
     diagnoses:activeScenario?[{...scenarioEvidence[activeScenario],resource:'Pod/probe-failure-simulated'}]:[],
     timeline:[...labTimeline],

@@ -44,6 +44,8 @@ type PolicyDetail struct {
 	Spec      networking.NetworkPolicySpec `json:"spec"`
 }
 type Topology struct {
+	TopologyFacts
+	Services      []Service         `json:"services"`
 	Routes        []RouteEdge       `json:"routes"`
 	Endpoints     []EndpointEdge    `json:"endpoints"`
 	Identities    []PodIdentity     `json:"identities"`
@@ -56,7 +58,7 @@ type Topology struct {
 // Topology reports configuration and discovery evidence, not access decisions
 // or measured traffic. No token, Secret, or pod environment is read.
 func (c *Client) Topology(ctx context.Context) (Topology, error) {
-	out := Topology{Routes: []RouteEdge{}, Endpoints: []EndpointEdge{}, Identities: []PodIdentity{}, Policies: []PolicyDetail{}, ExternalNames: map[string]string{}, Warnings: []string{}, ObservedAt: time.Now().UTC()}
+	out := Topology{Services: []Service{}, Routes: []RouteEdge{}, Endpoints: []EndpointEdge{}, Identities: []PodIdentity{}, Policies: []PolicyDetail{}, ExternalNames: map[string]string{}, Warnings: []string{}, ObservedAt: time.Now().UTC()}
 	ing, err := c.client.NetworkingV1().Ingresses("").List(ctx, metav1.ListOptions{})
 	if err != nil {
 		out.Warnings = append(out.Warnings, "Ingress discovery unavailable")
@@ -104,9 +106,14 @@ func (c *Client) Topology(ctx context.Context) (Topology, error) {
 	}
 	services, err := c.client.CoreV1().Services("").List(ctx, metav1.ListOptions{})
 	if err != nil {
-		out.Warnings = append(out.Warnings, "ExternalName discovery unavailable")
+		out.Warnings = append(out.Warnings, "Service and ExternalName discovery unavailable")
 	} else {
 		for _, s := range services.Items {
+			ports := []string{}
+			for _, p := range s.Spec.Ports {
+				ports = append(ports, strconv.Itoa(int(p.Port))+"/"+string(p.Protocol))
+			}
+			out.Services = append(out.Services, Service{Namespace: s.Namespace, Name: s.Name, Type: string(s.Spec.Type), ClusterIP: s.Spec.ClusterIP, Ports: ports})
 			if s.Spec.ExternalName != "" {
 				out.ExternalNames[s.Namespace+"/"+s.Name] = s.Spec.ExternalName
 			}
@@ -192,6 +199,11 @@ func (c *Client) Topology(ctx context.Context) (Topology, error) {
 			}
 			out.Identities = append(out.Identities, id)
 		}
+	}
+	if pods != nil {
+		c.topologyFacts(ctx, pods.Items, &out)
+	} else {
+		c.topologyFacts(ctx, nil, &out)
 	}
 	return out, nil
 }

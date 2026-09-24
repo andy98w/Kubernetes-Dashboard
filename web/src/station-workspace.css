@@ -1,4 +1,10 @@
 /* Station chrome: quiet instrumentation around a playful, explorable map. */
+.station-workstation .work-hands{display:none}
+.connection-flow{stroke-dasharray:9 5;animation:incoming-route-direction 1.2s linear infinite}
+.connection-flow.connection-outbound{animation-direction:reverse}
+.station-paused .connection-flow{animation-play-state:paused!important}
+@keyframes incoming-route-direction{to{stroke-dashoffset:-28}}
+@media(prefers-reduced-motion:reduce){.connection-flow{animation:none!important}}
 .station-shell .workspace{position:relative}
 .station-shell .station{position:relative}
 .map-options,.view-options{position:absolute;top:10px;z-index:8;color:#d8e2e8;font-size:12px}
@@ -38,7 +44,8 @@
 .station-shell .workspace:has(.station){overflow:hidden;padding:0}
 .station-shell .workspace>.data-panel:has(.station){flex:1;min-height:0;display:flex;flex-direction:column;margin:0;border:0;border-radius:0;box-shadow:none}
 .station-shell .data-panel>.station{flex:1;min-height:0;display:flex;flex-direction:column;border-radius:0}
-.station-shell .station-stage{flex:1;min-height:0;height:auto}
+.station-shell .station-stage{flex:1;min-height:0;height:auto;padding-top:56px;box-sizing:border-box}
+.station-shell .station-stage>.station-world{height:100%;display:block}
 .station-shell .station-toolbar,.station-shell .station-footer,.station-shell .filters{flex-shrink:0}
 .station-shell .station-footer{padding:8px 16px;font-family:inherit}
 .station-shell .station-footer details[open]{position:absolute;bottom:12px;right:20px;z-index:5;background:#20364b;padding:14px;border-radius:12px;border:1px solid #61788c;max-width:min(480px,75vw)}
@@ -55,7 +62,8 @@
 .ui-select>svg{position:absolute;right:12px;top:50%;transform:translateY(-50%);width:14px;height:14px;fill:none;stroke:#adc5d4;stroke-width:1.8;pointer-events:none}
 .ui-select select:focus-visible{outline:2px solid #e8ce8f;outline-offset:2px}
 .station-gesture-hint{position:absolute;bottom:14px;right:18px;color:#a9bfce;font-size:10px;pointer-events:none}
-.station-world:focus-visible{outline:2px solid #e8ce8f;outline-offset:-3px}
+.station-world:focus{outline:none}
+.station-world:focus-visible:not([data-input="pointer"]){outline:2px solid #e8ce8f;outline-offset:-3px}
 /* Keep inspection headers clear of the shared top control row. */
 .station-shell .topology-panel,.station-shell .station-events{top:62px;max-height:calc(100% - 94px)}
 .station-shell .station-stage:has(.route-clear) .topology-panel,.station-shell .station-stage:has(.route-clear) .station-events{top:96px;max-height:calc(100% - 128px)}
@@ -67,3 +75,9 @@
 @keyframes station-panel-in{from{opacity:.5;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
 @media(max-width:700px){.station-shell{--rail:52px}.station-shell.nav-expanded{--rail:140px}.station-shell .station-dock{padding:8px 4px}.station-shell .station-dock button{padding:10px}.station-shell .workspace{padding:8px}.station-shell .filters{padding:8px;flex-wrap:wrap}.station-shell .filters input{width:100%;flex:1 1 110px}.station-shell .ui-select{flex:1 1 110px}.station-shell .station-toolbar{padding:8px}.station-shell .station-toolbar h1{font-size:14px}.station-shell .station-tools button span{display:none}.station-shell .station-footer{gap:8px;font-size:10px;padding:8px}.station-gesture-hint{font-size:9px;right:8px;bottom:8px}.station-shell .station-inspect{bottom:32px}.station-shell .station-events{max-height:calc(100% - 40px)}}
 @media(prefers-reduced-motion:reduce){.station-inspect,.station-events,.station-panel,.workload-drawer{animation:none}}
+.incident-walkthrough{padding:14px 0;border-block:1px solid #506a8066;margin:14px 0}
+.incident-walkthrough ol{display:flex;gap:12px;list-style:none;padding:0;margin:0;flex-wrap:wrap}
+.incident-walkthrough li{display:flex;align-items:center;gap:6px;font-size:12px;color:#afbdcc}
+.incident-walkthrough li span{display:grid;place-items:center;width:22px;height:22px;border-radius:50%;border:1px solid #607b8b}
+.incident-walkthrough li[data-complete=true] span{background:#a6e5c7;color:#19374d;border-color:transparent}
+.incident-walkthrough p{line-height:1.6;font-size:13px}.incident-walkthrough small{color:#afbdcc;line-height:1.5;display:block}

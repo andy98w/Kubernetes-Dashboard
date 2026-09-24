@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test'
 
 test('labels the offline dataset honestly', async ({ page }) => {
   await page.goto('/#/overview')
-  await expect(page.locator('.connection-pill')).toHaveText('Demo data')
+  await expect(page.locator('.connection-pill')).toHaveText('Cluster station')
   await expect(page.locator('.demo-banner')).toHaveCount(0)
   await expect(page.getByText('Soon', { exact: true })).toHaveCount(0)
 })

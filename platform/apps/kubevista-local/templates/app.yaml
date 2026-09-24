@@ -8,10 +8,13 @@ kind: ClusterRole
 metadata:
   name: {{ .Release.Name }}-{{ .Release.Namespace }}-reader
 rules:
+  - apiGroups: ["metrics.k8s.io"]
+    resources: ["nodes"]
+    verbs: ["get", "list"]
   - nonResourceURLs: ["/readyz"]
     verbs: ["get"]
   - apiGroups: [""]
-    resources: [nodes, namespaces, pods, pods/log, events, services]
+    resources: [nodes, namespaces, pods, pods/log, events, services, persistentvolumeclaims]
     verbs: [get, list, watch]
   - apiGroups: [apps]
     resources: [deployments, replicasets, statefulsets, daemonsets]

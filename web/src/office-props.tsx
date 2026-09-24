@@ -11,11 +11,12 @@ function Box({u=0,v=0,w=32,d=20,z=0,h=32,color='#91adb7'}:{u?:number;v?:number;w
 export const officeLayout:Record<string,{u:number;v:number}>={
  'API server':{u:40,v:30},Scheduler:{u:120,v:24},Controllers:{u:35,v:112},etcd:{u:145,v:98},
  Service:{u:45,v:32},EndpointSlice:{u:130,v:28},'Pod backend':{u:130,v:120},
- Prometheus:{u:28,v:24},Grafana:{u:87,v:24},Alertmanager:{u:146,v:24},
- Loki:{u:25,v:84},Tempo:{u:148,v:84},'OTel gateway':{u:25,v:140},'OTel agent':{u:148,v:140},
+ Prometheus:{u:40,v:30},Grafana:{u:125,v:30},Alertmanager:{u:215,v:30},
+ Loki:{u:40,v:110},Tempo:{u:215,v:110},'OTel gateway':{u:40,v:190},'OTel agent':{u:215,v:190},
+ 'Error triage':{u:125,v:145},
 }
 export function OfficeProp({name}:{name:string}){
- const desk=['API server','Grafana','Controllers','Service'].includes(name)
+ const desk=['API server','Grafana','Controllers','Service','Error triage'].includes(name)
  const color=name==='etcd'?'#b5abc8':name==='Loki'?'#95b5b5':name==='Alertmanager'?'#d6a271':'#91adb7'
  return <g strokeLinejoin="round">
   <title>{name}</title>

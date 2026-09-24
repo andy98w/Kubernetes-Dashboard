@@ -28,8 +28,8 @@ export function NodeDecor({index}:{index:number}){
  const origin=nodeOrigin(index),base=project(origin.u,origin.v)
  const at=(u:number,v:number)=>{const point=project(origin.u+u,origin.v+v);return `translate(${point.x-base.x} ${point.y-base.y})`}
  return <g aria-hidden="true" pointerEvents="none" className="station-decor">
-  <g transform={at(.65,10.3)}><Storage/></g>
-  <g transform={at(12.6,1.3)}><Plant/></g>
-  <g transform={at(12.4,12.4)}><Plant/></g>
+  <g transform={at(.65,15)}><Storage/></g>
+  <g transform={at(16.6,1.3)}><Plant/></g>
+  <g transform={at(16.4,16.4)}><Plant/></g>
  </g>
 }

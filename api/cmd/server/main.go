@@ -18,6 +18,7 @@ import (
 )
 
 func main() {
+	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, nil)))
 	cfg, err := config.FromEnv()
 	if err != nil {
 		slog.Error("invalid configuration", "error", err)

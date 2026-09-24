@@ -1,0 +1,5 @@
+apiVersion: v2
+name: portfolio
+description: Static Andy Wu portfolio test deployment
+type: application
+version: 0.1.0
